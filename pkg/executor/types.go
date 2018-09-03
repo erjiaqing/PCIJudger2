@@ -1,5 +1,7 @@
 package executor
 
+import "sync"
+
 type ExecuteResult struct {
 	ExeTime    int    `json:"exe_time"`
 	ExeMemory  int64  `json:"exe_memory"`
@@ -22,9 +24,16 @@ type CGroupConfig struct {
 	CPU    *int64
 }
 
+// CGroup defines a control group
+// Name: the name of the cgroup
+// Config currently exectime and execmemory
+// Chroot change root, create overlayfs on path and then change root into it
+// if Chroot = "/" or "", then will not change root
 type CGroup struct {
 	Name   string
 	Config CGroupConfig
+	Mutex  sync.Mutex
+	Chroot string
 	state  int
 }
 

@@ -34,12 +34,20 @@ func (lang *LanguageConf) parseMount() {
 	}
 }
 
+type Subtask struct {
+	Name      string   `json:"name,omitempty"`
+	Score     int      `json:"score"`
+	Case      []int    `json:"case,omitempty"`
+	CaseInput []string `json:"caseInput,omitempty"`
+}
+
 type Problem struct {
 	TimeLimit   int        `json:"time"`
 	MemoryLimit int64      `json:"memory"`
 	TestCase    []TestCase `json:"case"`
 	Interector  Program    `json:"interactor,omitempty"`
 	Checker     Program    `json:"checker,omitempty"`
+	Subtasks    []Subtask  `json:"subtasks"`
 }
 
 type Program struct {
