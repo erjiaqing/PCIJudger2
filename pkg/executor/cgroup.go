@@ -15,11 +15,18 @@ import (
 )
 
 func init() {
+	logrus.Infof("Creating cgroups")
 	if _, err := os.Stat(path.Join("/sys", "fs", "cgroup", "cpu,cpuacct", "FinalJudger2")); os.IsNotExist(err) {
-		os.Mkdir(path.Join("/sys", "fs", "cgroup", "cpu,cpuacct", "FinalJudger2"), 0755)
+		err := os.Mkdir(path.Join("/sys", "fs", "cgroup", "cpu,cpuacct", "FinalJudger2"), 0755)
+		if err != nil {
+			logrus.Fatalf("Cannot create cgroup: %v", err)
+		}
 	}
 	if _, err := os.Stat(path.Join("/sys", "fs", "cgroup", "memory", "FinalJudger2")); os.IsNotExist(err) {
-		os.Mkdir(path.Join("/sys", "fs", "cgroup", "memory", "FinalJudger2"), 0755)
+		err := os.Mkdir(path.Join("/sys", "fs", "cgroup", "memory", "FinalJudger2"), 0755)
+		if err != nil {
+			logrus.Fatalf("Cannot create cgroup: %v", err)
+		}
 	}
 }
 
@@ -139,6 +146,12 @@ func (c *CGroup) CleanUp() error {
 		}
 	}
 	// remove directories
+	if err := syscall.Rmdir(path.Join("/sys", "fs", "cgroup", "cpu,cpuacct", "FinalJudger2", c.Name)); err != nil {
+		return err
+	}
+	if err := syscall.Rmdir(path.Join("/sys", "fs", "cgroup", "memory", "FinalJudger2", c.Name)); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/erjiaqing/problem-ci-judger-2/pkg/executor"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,4 +28,16 @@ func main() {
 	} else if uid != 0 {
 		logrus.Fatalf("Final Judger should run in root, however, your uid is %d, 0 required", uid)
 	}
+	cgroup, err := executor.NewCGroup()
+	if err != nil {
+		logrus.Fatalf("Cannot create cgroup: %v", err)
+	}
+	logrus.Infof("Created cgroup: %s", cgroup.Name)
+	defer func() {
+		logrus.Infof("Cleanning up cgroup: %v", cgroup.Name)
+		err := cgroup.CleanUp()
+		if err != nil {
+			logrus.Errorf("Failed to clean up: %v", err)
+		}
+	}()
 }
