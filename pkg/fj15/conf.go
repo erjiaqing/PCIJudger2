@@ -1,6 +1,7 @@
 package fj15
 
 type Config struct {
-	Tmp     string `json:"tmp"`
-	Problem string `json:"problem"`
+	Tmp             string `json:"tmp"`
+	Problem         string `json:"problem"`
+	LanguageStorage string `json:"lang"`
 }

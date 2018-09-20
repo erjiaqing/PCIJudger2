@@ -12,13 +12,12 @@ type CheckerResult struct {
 }
 
 type checker struct {
-	Conf *Config
 	Root string
 }
 
 var Checker checker
 
-func (c *checker) ProcessWork() error {
+func (c *checker) ProcessWork(conf *Config) error {
 	if oldCwd, err := os.Getwd(); err != nil {
 		return err
 	} else {
@@ -28,8 +27,8 @@ func (c *checker) ProcessWork() error {
 	log := NewPCILog("checker")
 
 	tmpDirName := GetRandomString()
-	BaseDir := filepath.Join(c.Conf.Tmp, tmpDirName)
-	ProblemSourceDir := c.Conf.Problem
+	BaseDir := filepath.Join(conf.Tmp, tmpDirName)
+	ProblemSourceDir := conf.Problem
 	if err := shutil.CopyTree(ProblemSourceDir, BaseDir, nil); err != nil {
 		return err
 	}
@@ -39,7 +38,8 @@ func (c *checker) ProcessWork() error {
 
 	compileProblemLogger := NewPCILog("problem-compiler")
 	compileProblemLogger.Append("Building problem")
-	problemCompileDir := filepath.Join(c.Conf.Tmp, GetRandomString())
+	problemCompileDir := filepath.Join(conf.Tmp, GetRandomString())
+	problemBuildResult, err := BuildProblem(BaseDir, problemCompileDir)
 
 	return nil
 }
