@@ -129,7 +129,7 @@ func (c *CGroup) CleanUp() error {
 			logrus.Warningf("Failed to kill process: %v", err)
 		}
 	}
-	// kill by nemory
+	// kill by memory
 	content, err = ioutil.ReadFile(path.Join("/sys", "fs", "cgroup", "memory", "FinalJudger2", c.Name, "cgroup.procs"))
 	if err != nil {
 		return fmt.Errorf("Failed to read processes in cgroup: %v", err)
