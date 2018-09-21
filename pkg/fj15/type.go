@@ -12,7 +12,8 @@ type ProblemConfig struct {
 	MemoryLimit uint64      `json:"memoryLimit"`
 	Name        string      `json:"name,omitempty"`
 	Checker     *SourceCode `json:"checker"`
-	Interactor  *SourceCode `json:"interactor"`
+	Interactor  *SourceCode `json:"interactor,omitempty"`
+	ExtraFile   []string    `json:"additionalLibrary,omitempty"`
 	Case        []TestCase  `json:"case"`
 }
 

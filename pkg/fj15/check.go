@@ -39,7 +39,7 @@ func (c *checker) ProcessWork(conf *Config) error {
 	compileProblemLogger := NewPCILog("problem-compiler")
 	compileProblemLogger.Append("Building problem")
 	problemCompileDir := filepath.Join(conf.Tmp, GetRandomString())
-	problemBuildResult, err := BuildProblem(BaseDir, problemCompileDir)
+	problemBuildResult, err := BuildProblem(BaseDir, problemCompileDir, conf)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package fj15
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -95,6 +96,14 @@ func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
 		return "", err
 	}
 	code.CompileResult = compileRes
+	if code.CompileResult.ExitReason != "NONE" {
+		return fmt.Sprintf("Compiler exited with %s", code.CompileResult.ExitReason), errors.New("CE")
+	}
+	executableInfo, err := os.Stat(compileCfg.Executable)
+	if code.CompileResult.ExitCode != 0 || code.CompileResult.ExitSignal != 0 || code.CompileResult.TermSignal != 0 || err != nil {
+		compilerStderr, _ := ioutil.ReadFile("compile_error")
+		return string(compilerStderr), errors.New("CE")
+	}
 	if code.CompileResult.ExitReason == "NONE" {
 		compilerStderr, _ := ioutil.ReadFile("compile_error")
 		return string(compilerStderr), nil
