@@ -1,0 +1,29 @@
+workspace:
+  base: /go
+  path: src/github.com/erjiaqing/SenRenBanKa
+
+pipeline:
+  ProblemBuilder:
+    group: build
+    image: golang:1.11
+    commands:
+      - cd cmd/fj15/builder
+      - go build
+  SubmissionJudger:
+    group: build
+    image: golang:1.11
+    commands:
+      - cd cmd/fj15/judger
+      - go build
+  ProblemBuilder:
+    group: build
+    image: golang:1.10
+    commands:
+      - cd cmd/fj15/builder
+      - go build
+  SubmissionJudger:
+    group: build
+    image: golang:1.10
+    commands:
+      - cd cmd/fj15/judger
+      - go build
