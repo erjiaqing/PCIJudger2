@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ExecuteResult struct {
@@ -43,13 +45,14 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 			"--remount-dev",
 			"true",
 			"--chdir",
-			"/fj_tmp",
+			"/",
 			"--syscalls",
 			"!execve,flock,ptrace,sync,fdatasync,fsync,msync,sync_file_range,syncfs,unshare,setns,clone[a&268435456==268435456],query_module,sysinfo,syslog,sysfs",
 		}...)
 	}
 	runCommand = append(runCommand, "--")
 	runCommand = append(runCommand, cmd...)
+	logrus.Infof("Exec: %v", runCommand)
 	exe := exec.Command(runCommand[0], runCommand[1:]...)
 	if stdin != "-" {
 		fp, err := os.Open(stdin)

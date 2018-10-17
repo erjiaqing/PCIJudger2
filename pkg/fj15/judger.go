@@ -26,6 +26,7 @@ type JudgeDetail struct {
 	Input      string `json:"input"`
 	Output     string `json:"output"`
 	Answer     string `json:"answer"`
+	Comment    string `json:"comment"`
 	Verdict    string `json:"verdict"`
 	ExeTime    uint64 `json:"exe_time"`
 	ExeMemory  uint64 `json:"exe_memory"`
@@ -49,22 +50,22 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}
 	defer os.RemoveAll(workDir)
 
-	var sourceDir string
+	if source, err := shutil.Copy(code.Source, filepath.Join(workDir, filepath.Base(code.Source)), false); err != nil {
+		return nil, fmt.Errorf("failed to copy source: %v", err)
+	} else {
+		code.Source = source
+	}
 
 	if currentDir, err := os.Getwd(); err != nil {
 		return nil, err
 	} else if err := os.Chdir(workDir); err != nil {
 		return nil, err
 	} else {
-		sourceDir = currentDir
 		defer os.Chdir(currentDir)
 	}
 
 	execCommand, codeLanguage, err := GetExecuteCommand(code, conf)
 	if err != nil {
-		return nil, err
-	}
-	if _, err := shutil.Copy(code.Source, filepath.Join(workDir, execCommand.Source), false); err != nil {
 		return nil, err
 	}
 
@@ -110,14 +111,66 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		return nil, err
 	}
 
+	checkerCmd := []string{filepath.Join(problem, problemConf.Checker.Executable)}
+	if problemConf.Checker.Executable == "" {
+		checkerCmd = []string{filepath.Join(problem, problemConf.Checker.Source+".exe")}
+	}
+
+	interCmd := []string{}
+	if problemConf.Interactor != nil {
+		interCmd = []string{filepath.Join(problem, problemConf.Interactor.Executable)}
+		if problemConf.Interactor.Executable == "" {
+			interCmd = []string{filepath.Join(problem, problemConf.Interactor.Source+".exe")}
+		}
+	}
+
 	for testId, testInfo := range problemConf.Case {
-		logrus.Info("Judge test %d", testId+1)
+		logrus.Infof("Judging test %d", testId+1)
 		resDetail := &JudgeDetail{
 			Name:    fmt.Sprintf("Test #%d", testId+1),
 			Verdict: "AC",
 		}
+		judgeResult.Detail = append(judgeResult.Detail, resDetail)
+
+		var execResult, interactorResult *ExecuteResult
 		if problemConf.Interactor == nil {
-			execResult, err := Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), true, filepath.Join(problem, testInfo.Input), "_stdout", "-")
+			execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false, filepath.Join(problem, testInfo.Input), "_stdout", "-")
+			if err != nil {
+				logrus.Fatalf("Failed to execute code: %v", err)
+			}
+		} else {
+			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, interCmd, timeLimit, problemConf.MemoryLimit, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), true)
+			if err != nil {
+				logrus.Fatalf("Failed to execute code: %v", err)
+			}
+			if interactorResult.ExitReason != "none" {
+				execResult.ExitReason = "WA"
+			}
+		}
+		resDetail.ExeTime = uint64(1000 * execResult.CPUTime)
+		resDetail.ExeMemory = execResult.ExeMemory
+		if uint64(1000*execResult.CPUTime) > judgeResult.ExeTime {
+			judgeResult.ExeTime = uint64(1000 * execResult.CPUTime)
+		}
+		if execResult.ExeMemory > judgeResult.ExeMemory {
+			judgeResult.ExeMemory = execResult.ExeMemory
+		}
+		if execResult.ExitReason != "none" {
+			resDetail.Verdict = execResult.ExitReason
+			judgeResult.Verdict = execResult.ExitReason
+			break
+		}
+
+		tcheckerCmd := append(checkerCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output))
+
+		checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit, 1., "", false, "-", "checker.stdout", "checker.stderr")
+		if err != nil {
+			resDetail.Verdict = "SE"
+			judgeResult.Verdict = "SE"
+		} else if checkerResult.ExitCode != 0 {
+			resDetail.Verdict = "WA"
+			judgeResult.Verdict = "WA"
+			break
 		}
 	}
 	return judgeResult, nil

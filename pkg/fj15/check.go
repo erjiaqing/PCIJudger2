@@ -24,7 +24,7 @@ func (c *checker) ProcessWork(conf *Config) error {
 		defer os.Chdir(oldCwd)
 	}
 
-	log := NewPCILog("checker")
+	//log := NewPCILog("checker")
 
 	tmpDirName := GetRandomString()
 	BaseDir := filepath.Join(conf.Tmp, tmpDirName)
@@ -39,7 +39,7 @@ func (c *checker) ProcessWork(conf *Config) error {
 	compileProblemLogger := NewPCILog("problem-compiler")
 	compileProblemLogger.Append("Building problem")
 	problemCompileDir := filepath.Join(conf.Tmp, GetRandomString())
-	problemBuildResult, err := BuildProblem(BaseDir, problemCompileDir, conf)
+	BuildProblem(BaseDir, problemCompileDir, conf)
 
 	return nil
 }

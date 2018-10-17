@@ -32,6 +32,7 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 	if err := loadYAML(filepath.Join(conf.LanguageStorage, code.Language+".yaml"), language); err != nil {
 		return nil, nil, err
 	}
+	Variables["filename"] = code.Source
 	if language.Variable != nil {
 		for _, variable := range language.Variable {
 			name := variable.Name
@@ -52,6 +53,16 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 		}
 	}
 	ret := &ExecuteCommand{}
+	ret.Source = language.Source
+	for k, v := range Variables {
+		ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, -1)
+	}
+	ret.Executable = language.Executable
+	for k, v := range Variables {
+		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, -1)
+	}
+	Variables["source"] = ret.Source
+	Variables["executable"] = ret.Executable
 	for _, str := range language.Compile.Cmd {
 		for k, v := range Variables {
 			str = strings.Replace(str, "{"+k+"}", v, -1)
@@ -63,14 +74,6 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 			str = strings.Replace(str, "{"+k+"}", v, -1)
 		}
 		ret.Execute = append(ret.Execute, str)
-	}
-	ret.Source = language.Source
-	for k, v := range Variables {
-		ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, -1)
-	}
-	ret.Executable = language.Executable
-	for k, v := range Variables {
-		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, -1)
 	}
 	return ret, language, nil
 }
@@ -96,15 +99,15 @@ func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
 		return "", err
 	}
 	code.CompileResult = compileRes
-	if code.CompileResult.ExitReason != "NONE" {
+	if code.CompileResult.ExitReason != "none" {
 		return fmt.Sprintf("Compiler exited with %s", code.CompileResult.ExitReason), errors.New("CE")
 	}
-	executableInfo, err := os.Stat(compileCfg.Executable)
+	_, err = os.Stat(compileCfg.Executable)
 	if code.CompileResult.ExitCode != 0 || code.CompileResult.ExitSignal != 0 || code.CompileResult.TermSignal != 0 || err != nil {
 		compilerStderr, _ := ioutil.ReadFile("compile_error")
 		return string(compilerStderr), errors.New("CE")
 	}
-	if code.CompileResult.ExitReason == "NONE" {
+	if code.CompileResult.ExitReason == "none" {
 		compilerStderr, _ := ioutil.ReadFile("compile_error")
 		return string(compilerStderr), nil
 	}

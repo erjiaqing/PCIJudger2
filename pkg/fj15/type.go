@@ -8,8 +8,8 @@ import (
 
 type ProblemConfig struct {
 	Version     int         `json:"version"`
-	TimeLimit   uint64      `json:"time"`
-	MemoryLimit uint64      `json:"memoryLimit"`
+	TimeLimit   uint64      `json:"timelimit"`
+	MemoryLimit uint64      `json:"memorylimit"`
 	Name        string      `json:"name,omitempty"`
 	Checker     *SourceCode `json:"checker"`
 	Interactor  *SourceCode `json:"interactor,omitempty"`
@@ -19,7 +19,7 @@ type ProblemConfig struct {
 
 type SourceCode struct {
 	Source        string         `json:"source"`
-	Language      string         `json:"language"`
+	Language      string         `json:"lang"`
 	Executable    string         `json:"-"`
 	CompileResult *ExecuteResult `json:"-"`
 }

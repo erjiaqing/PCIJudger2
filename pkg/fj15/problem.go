@@ -24,7 +24,9 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 		Output:  "",
 		Log:     NewPCILog("problem-builder"),
 	}
-	shutil.CopyTree(problem, dest, nil)
+	if err := shutil.CopyTree(problem, dest, nil); err != nil {
+		return nil, err
+	}
 	if currentDir, err := os.Getwd(); err != nil {
 		result.Log.Append(fmt.Sprintf("Failed to get working directory %v", err))
 		return result, err
@@ -34,6 +36,8 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 	} else {
 		defer os.Chdir(currentDir)
 	}
+	currdir, _ := os.Getwd()
+	logrus.Infof("Current directory: %s", currdir)
 
 	problemMeta := &ProblemConfig{}
 	if err := loadYAML("problem.yaml", problemMeta); err != nil {
@@ -43,9 +47,12 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 
 	if problemMeta.Checker != nil {
 		result.Log.Append(fmt.Sprintf("Compiling checker..."))
+		logrus.Infof("Compiling checker...")
 		compilerOutput, err := problemMeta.Checker.Compile(conf, dest)
 		result.Log.Append("Compiler Output:")
 		result.Log.Append(compilerOutput)
+		logrus.Infof("Compiler Output:")
+		fmt.Fprintf(os.Stderr, "%s", compilerOutput)
 		if err != nil {
 			result.Success = false
 			return result, err
@@ -111,7 +118,7 @@ func GetProblem(conf *Config, problem, problemGit, problemVersion string) error 
 		return err
 	}
 
-	buildResult, err := BuildProblem(tmpDir, problemDir, conf)
+	_, err = BuildProblem(tmpDir, problemDir, conf)
 	if err != nil {
 		return err
 	}
