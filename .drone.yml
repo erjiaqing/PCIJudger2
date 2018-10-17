@@ -1,6 +1,6 @@
 workspace:
   base: /go
-  path: src/github.com/erjiaqing/SenRenBanKa
+  path: src/github.com/erjiaqing/problem-ci-judger-2
 
 pipeline:
   ProblemBuilder:
@@ -15,13 +15,13 @@ pipeline:
     commands:
       - cd cmd/fj15/judger
       - go build
-  ProblemBuilder:
+  ProblemBuilder-Go1.10:
     group: build
     image: golang:1.10
     commands:
       - cd cmd/fj15/builder
       - go build
-  SubmissionJudger:
+  SubmissionJudger-Go1.10:
     group: build
     image: golang:1.10
     commands:
