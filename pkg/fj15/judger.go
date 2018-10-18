@@ -139,11 +139,13 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 				logrus.Fatalf("Failed to execute code: %v", err)
 			}
 		} else {
-			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, interCmd, timeLimit, problemConf.MemoryLimit, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), true)
+			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false)
 			if err != nil {
 				logrus.Fatalf("Failed to execute code: %v", err)
 			}
 			if interactorResult.ExitReason != "none" {
+				execResult.ExitReason = "WA"
+			} else if interactorResult.ExitCode != 0 {
 				execResult.ExitReason = "WA"
 			}
 		}
@@ -158,6 +160,11 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		if execResult.ExitReason != "none" {
 			resDetail.Verdict = execResult.ExitReason
 			judgeResult.Verdict = execResult.ExitReason
+
+			resDetail.Input, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Input), 128)
+			resDetail.Output, _ = ReadFirstBytes("_stdout", 128)
+			resDetail.Answer, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Output), 128)
+
 			break
 		}
 

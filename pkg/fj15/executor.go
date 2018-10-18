@@ -146,7 +146,9 @@ func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit 
 		"3",
 	}
 	interactorCommand = append(interactorCommand, "--")
-	interactorCommand = append(interactorCommand, cmd...)
+	interactorCommand = append(interactorCommand, interactor...)
+	logrus.Infof("Exec: %v", runCommand)
+	logrus.Infof("Exec: %v", interactorCommand)
 	//------
 	exeProgram := exec.Command(runCommand[0], runCommand[1:]...)
 	exeInteractor := exec.Command(interactorCommand[0], interactorCommand[1:]...)
@@ -158,7 +160,7 @@ func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit 
 		exeInteractor.Stdout = iw
 	}
 
-	if pw, ir, err := os.Pipe(); err != nil {
+	if ir, pw, err := os.Pipe(); err != nil {
 		return nil, nil, err
 	} else {
 		exeProgram.Stdout = pw
