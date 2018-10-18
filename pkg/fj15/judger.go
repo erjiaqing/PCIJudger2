@@ -161,9 +161,15 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 			break
 		}
 
+		resDetail.Input, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Input), 128)
+		resDetail.Output, _ = ReadFirstBytes("_stdout", 128)
+		resDetail.Answer, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Output), 128)
+
 		tcheckerCmd := append(checkerCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output))
 
-		checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit, 1., "", false, "-", "checker.stdout", "checker.stderr")
+		checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit*1024*1024, 1., "", false, "-", "checker.stderr", "checker.stderr")
+		resDetail.Comment, _ = ReadFirstBytes("checker.stderr", 128)
+
 		if err != nil {
 			resDetail.Verdict = "SE"
 			judgeResult.Verdict = "SE"

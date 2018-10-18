@@ -26,7 +26,7 @@ func ReadFirstBytes(path string, maxSize int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fileSize := fmt.Sprintf("...(total %s bytes)", fileStat.Size())
+	fileSize := fmt.Sprintf("...(total %d bytes)", fileStat.Size())
 	if fileStat.Size() > maxSize-int64(len(fileSize)) {
 		return string(data[0:maxSize-int64(len(fileSize))]) + fileSize, nil
 	} else {

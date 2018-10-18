@@ -62,7 +62,7 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 		exe.Stdin = fp
 	}
 	if stdout != "-" {
-		fp, err := os.OpenFile(stdout, os.O_RDWR|os.O_CREATE, 0644)
+		fp, err := os.OpenFile(stdout, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 		}
 	}
 	if stderr != "-" && stderr != stdout {
-		fp, err := os.OpenFile(stderr, os.O_RDWR|os.O_CREATE, 0644)
+		fp, err := os.OpenFile(stderr, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return nil, err
 		}
