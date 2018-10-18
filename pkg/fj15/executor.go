@@ -122,7 +122,7 @@ func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit 
 			"--remount-dev",
 			"true",
 			"--chdir",
-			"/fj_tmp",
+			"/tmp",
 			"--syscalls",
 			"!execve,flock,ptrace,sync,fdatasync,fsync,msync,sync_file_range,syncfs,unshare,setns,clone[a&268435456==268435456],query_module,sysinfo,syslog,sysfs",
 		}...)

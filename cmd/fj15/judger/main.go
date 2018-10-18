@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/erjiaqing/problem-ci-judger-2/pkg/hostconn"
+
 	"github.com/erjiaqing/problem-ci-judger-2/pkg/fj15"
 	"github.com/sirupsen/logrus"
 )
@@ -22,6 +24,12 @@ var code = &fj15.SourceCode{
 	Source:   "/code",
 }
 
+var (
+	hostUDPConnIP   string
+	hostUDPConnPort int
+	judgeUid        string
+)
+
 func init() {
 	flag.StringVar(&conf.Tmp, "tempdir", conf.Tmp, "tempory directory")
 	flag.StringVar(&conf.Problem, "problem", conf.Problem, "problem path")
@@ -30,10 +38,14 @@ func init() {
 	flag.StringVar(&conf.MirrorFSConfig, "mirrorfsconf", conf.MirrorFSConfig, "path to mirrorfs config")
 	flag.StringVar(&code.Source, "source", code.Source, "source code")
 	flag.StringVar(&code.Language, "language", code.Language, "code language")
+	flag.StringVar(&hostUDPConnIP, "udp.ip", "", "host ip")
+	flag.IntVar(&hostUDPConnPort, "udp.port", 0, "host port")
+	flag.StringVar(&judgeUid, "udp.uid", "", "judge id")
 }
 
 func main() {
 	flag.Parse()
+	conf.HostSocket = hostconn.NewUDP(hostUDPConnIP, hostUDPConnPort, judgeUid)
 	res, err := fj15.Judge(conf, code, conf.Problem)
 	if err != nil {
 		logrus.Fatalf("Failed to judge code: %v", err)
@@ -42,5 +54,6 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("Failed to generate output: %v", err)
 	}
+	conf.HostSocket.SendStatus("FF", 100)
 	fmt.Printf(string(resjson))
 }

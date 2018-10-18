@@ -23,10 +23,10 @@ type JudgeResult struct {
 
 type JudgeDetail struct {
 	Name       string `json:"name"`
-	Input      string `json:"input"`
-	Output     string `json:"output"`
-	Answer     string `json:"answer"`
-	Comment    string `json:"comment"`
+	Input      string `json:"input,omitempty"`
+	Output     string `json:"output,omitempty"`
+	Answer     string `json:"answer,omitempty"`
+	Comment    string `json:"comment,omitempty"`
 	Verdict    string `json:"verdict"`
 	ExeTime    uint64 `json:"exe_time"`
 	ExeMemory  uint64 `json:"exe_memory"`
@@ -48,7 +48,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	if err := os.MkdirAll(workDir, 0777); err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(workDir)
+	//defer os.RemoveAll(workDir)
 
 	if source, err := shutil.Copy(code.Source, filepath.Join(workDir, filepath.Base(code.Source)), false); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
@@ -74,11 +74,15 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		Language: code.Language,
 	}
 
+	conf.HostSocket.SendStatus("00", 0)
+
 	for _, extraFile := range problemConf.ExtraFile {
 		if _, err := shutil.Copy(filepath.Join(problem, extraFile), filepath.Join(workDir, extraFile), false); err != nil {
 			return nil, err
 		}
 	}
+
+	conf.HostSocket.SendStatus("01", 0)
 
 	compilerOutput, err := newCode.Compile(conf, workDir)
 	if err != nil && newCode.CompileResult != nil {
@@ -97,6 +101,8 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		return nil, errors.New("Syetem Error")
 	}
 
+	conf.HostSocket.SendStatus("02", 0)
+
 	timeLimit := float32(problemConf.TimeLimit) / 1000.
 	if timeLimit > 120 {
 		timeLimit = 120.
@@ -104,11 +110,17 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	judgeResult.Verdict = "AC"
 	chrootName := GetRandomString()
 	if err := func() error {
+		logrus.Infof("Setting up mirrorfs: /run/%s ...", chrootName)
 		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", conf.MirrorFSConfig)
-		err := chrootCmd.Run()
-		return err
+		return chrootCmd.Run()
 	}(); err != nil {
 		return nil, err
+	} else {
+		defer func() error {
+			logrus.Infof("Tearing down mirrorfs: /run/%s ...", chrootName)
+			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", conf.MirrorFSConfig)
+			return chrootCmd.Run()
+		}()
 	}
 
 	checkerCmd := []string{filepath.Join(problem, problemConf.Checker.Executable)}
@@ -124,7 +136,10 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		}
 	}
 
+	totalTest := len(problemConf.Case)
+
 	for testId, testInfo := range problemConf.Case {
+		conf.HostSocket.SendStatus("10", testId*100/totalTest)
 		logrus.Infof("Judging test %d", testId+1)
 		resDetail := &JudgeDetail{
 			Name:    fmt.Sprintf("Test #%d", testId+1),
@@ -134,14 +149,14 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 		var execResult, interactorResult *ExecuteResult
 		if problemConf.Interactor == nil {
-			execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false, filepath.Join(problem, testInfo.Input), "_stdout", "-")
+			execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), true, filepath.Join(problem, testInfo.Input), "_stdout", "-")
 			if err != nil {
 				resDetail.Verdict = "SE"
 				resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
 				break
 			}
 		} else {
-			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false)
+			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), true)
 			if err != nil {
 				resDetail.Verdict = "SE"
 				resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
