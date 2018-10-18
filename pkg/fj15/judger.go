@@ -136,12 +136,16 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		if problemConf.Interactor == nil {
 			execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false, filepath.Join(problem, testInfo.Input), "_stdout", "-")
 			if err != nil {
-				logrus.Fatalf("Failed to execute code: %v", err)
+				resDetail.Verdict = "SE"
+				resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
+				break
 			}
 		} else {
 			execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join(workDir, chrootName), false)
 			if err != nil {
-				logrus.Fatalf("Failed to execute code: %v", err)
+				resDetail.Verdict = "SE"
+				resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
+				break
 			}
 			if interactorResult.ExitReason != "none" {
 				execResult.ExitReason = "WA"
@@ -151,26 +155,26 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		}
 		resDetail.ExeTime = uint64(1000 * execResult.CPUTime)
 		resDetail.ExeMemory = execResult.ExeMemory
-		if uint64(1000*execResult.CPUTime) > judgeResult.ExeTime {
-			judgeResult.ExeTime = uint64(1000 * execResult.CPUTime)
+		if resDetail.ExeTime > judgeResult.ExeTime {
+			judgeResult.ExeTime = resDetail.ExeTime
 		}
 		if execResult.ExeMemory > judgeResult.ExeMemory {
 			judgeResult.ExeMemory = execResult.ExeMemory
-		}
-		if execResult.ExitReason != "none" {
-			resDetail.Verdict = execResult.ExitReason
-			judgeResult.Verdict = execResult.ExitReason
-
-			resDetail.Input, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Input), 128)
-			resDetail.Output, _ = ReadFirstBytes("_stdout", 128)
-			resDetail.Answer, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Output), 128)
-
-			break
 		}
 
 		resDetail.Input, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Input), 128)
 		resDetail.Output, _ = ReadFirstBytes("_stdout", 128)
 		resDetail.Answer, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Output), 128)
+
+		if execResult.ExitReason != "none" {
+			resDetail.Verdict = execResult.ExitReason
+			judgeResult.Verdict = execResult.ExitReason
+			break
+		} else if execResult.ExitCode != 0 || execResult.ExitSignal != 0 || execResult.TermSignal != 0 {
+			resDetail.Verdict = "RE"
+			judgeResult.Verdict = "RE"
+			break
+		}
 
 		tcheckerCmd := append(checkerCmd, filepath.Join(problem, testInfo.Input), "_stdout", filepath.Join(problem, testInfo.Output))
 
@@ -180,6 +184,8 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		if err != nil {
 			resDetail.Verdict = "SE"
 			judgeResult.Verdict = "SE"
+			resDetail.Comment = fmt.Sprintf("Failed to run checker: %v", err)
+			break
 		} else if checkerResult.ExitCode != 0 {
 			resDetail.Verdict = "WA"
 			judgeResult.Verdict = "WA"
