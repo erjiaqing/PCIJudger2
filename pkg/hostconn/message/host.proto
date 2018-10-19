@@ -1,0 +1,8 @@
+syntax = "proto3";
+package message;
+
+message StateMessage {
+    string state = 1;
+    string uid = 2;
+    int32 progress = 3;
+}

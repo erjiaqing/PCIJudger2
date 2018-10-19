@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/golang/protobuf/proto"
+
+	"github.com/erjiaqing/problem-ci-judger-2/pkg/hostconn/message"
 	"github.com/erjiaqing/problem-ci-judger-2/pkg/util"
 	"github.com/sirupsen/logrus"
 )
@@ -42,8 +45,14 @@ func (c *UDP) SendStatus(state string, progress int) {
 	if c.socket == nil {
 		return
 	}
-	data := fmt.Sprintf("%s|%s|%d", c.uid, state, progress)
-	len := len(data)
-	full := fmt.Sprintf("01%08x%s", len, data)
-	c.socket.Write([]byte(full))
+	msg := &message.StateMessage{}
+	msg.Uid = c.uid
+	msg.State = state
+	msg.Progress = int32(progress)
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		logrus.Errorf("Failed to marshal message: %v", data)
+	}
+	c.socket.Write([]byte(data))
 }
