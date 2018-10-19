@@ -18,6 +18,7 @@ var conf = &fj15.Config{
 	LanguageStorage: "/language",
 	ProblemPath:     "/output",
 	MirrorFSConfig:  "/.mirrorfs.conf",
+	MaxJudgeThread:  1,
 }
 var code = &fj15.SourceCode{
 	Language: "",
@@ -39,13 +40,17 @@ func init() {
 	flag.StringVar(&code.Source, "source", code.Source, "source code")
 	flag.StringVar(&code.Language, "language", code.Language, "code language")
 	flag.StringVar(&hostUDPConnIP, "udp.ip", "", "host ip")
-	flag.IntVar(&hostUDPConnPort, "udp.port", 0, "host port")
 	flag.StringVar(&judgeUid, "udp.uid", "", "judge id")
+	flag.IntVar(&hostUDPConnPort, "udp.port", 0, "host port")
+	flag.IntVar(&conf.MaxJudgeThread, "thread", conf.MaxJudgeThread, "code language")
 }
 
 func main() {
 	flag.Parse()
 	conf.HostSocket = hostconn.NewUDP(hostUDPConnIP, hostUDPConnPort, judgeUid)
+	if conf.MaxJudgeThread <= 0 {
+		conf.MaxJudgeThread = 1
+	}
 	res, err := fj15.Judge(conf, code, conf.Problem)
 	if err != nil {
 		logrus.Fatalf("Failed to judge code: %v", err)

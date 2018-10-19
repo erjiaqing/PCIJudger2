@@ -8,5 +8,6 @@ type Config struct {
 	LanguageStorage string        `json:"lang"`
 	ProblemPath     string        `json:"datapath"`
 	MirrorFSConfig  string        `json:"mirrorfs"`
+	MaxJudgeThread  int           `json:"thread"`
 	HostSocket      *hostconn.UDP `json:"-"`
 }

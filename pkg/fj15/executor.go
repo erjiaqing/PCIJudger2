@@ -94,12 +94,30 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 	if err != nil {
 		return nil, err
 	}
+	outputExitReason := "none"
+	switch executorOutput.ExitReason {
+	case "CPU_TIME":
+		outputExitReason = "TLE"
+	case "REAL_TIME":
+		if executorOutput.CPUTime > cpuTimelimit {
+			outputExitReason = "TLE"
+		} else {
+			outputExitReason = "ILE"
+		}
+	case "MEMORY":
+		outputExitReason = "MLE"
+	default:
+		if executorOutput.ExitCode != 0 || executorOutput.ExitSignal != 0 || executorOutput.TermSignal != 0 {
+			outputExitReason = "RE"
+		}
+	}
+	executorOutput.ExitReason = outputExitReason
 	return executorOutput, nil
 }
 
 func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit uint64, timeRatio float32, chroot string, limitSyscall bool) (*ExecuteResult, *ExecuteResult, error) {
 	cpuTimelimit := timeLimit * timeRatio
-	realTimelimit := cpuTimelimit * 1.5
+	realTimelimit := cpuTimelimit * 3
 	runCommand := []string{
 		"/usr/local/bin/lrun",
 		"--max-real-time",
@@ -200,5 +218,23 @@ func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit 
 	if err := loadYAML(interactorResultYamlName, interactorOutput); err != nil {
 		return nil, nil, err
 	}
+	outputExitReason := "none"
+	switch executorOutput.ExitReason {
+	case "CPU_TIME":
+		outputExitReason = "TLE"
+	case "REAL_TIME":
+		if executorOutput.CPUTime > cpuTimelimit {
+			outputExitReason = "TLE"
+		} else {
+			outputExitReason = "ILE"
+		}
+	case "MEMORY":
+		outputExitReason = "MLE"
+	default:
+		if executorOutput.ExitCode != 0 || executorOutput.ExitSignal != 0 || executorOutput.TermSignal != 0 {
+			outputExitReason = "RE"
+		}
+	}
+	executorOutput.ExitReason = outputExitReason
 	return executorOutput, interactorOutput, nil
 }

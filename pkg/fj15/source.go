@@ -99,17 +99,15 @@ func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
 		return "", err
 	}
 	code.CompileResult = compileRes
-	if code.CompileResult.ExitReason != "none" {
-		return fmt.Sprintf("Compiler exited with %s", code.CompileResult.ExitReason), errors.New("CE")
-	}
 	_, err = os.Stat(compileCfg.Executable)
+	compilerStderr, _ := ioutil.ReadFile("compile_error")
 	if code.CompileResult.ExitCode != 0 || code.CompileResult.ExitSignal != 0 || code.CompileResult.TermSignal != 0 || err != nil {
-		compilerStderr, _ := ioutil.ReadFile("compile_error")
 		return string(compilerStderr), errors.New("CE")
 	}
 	if code.CompileResult.ExitReason == "none" {
-		compilerStderr, _ := ioutil.ReadFile("compile_error")
 		return string(compilerStderr), nil
+	} else if code.CompileResult.ExitReason != "none" {
+		return fmt.Sprintf("Compiler exited with %s", code.CompileResult.ExitReason), errors.New("CE")
 	}
 	return "", nil
 }
