@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/hostconn"
+	"github.com/erjiaqing/PCIJudger2/pkg/hostconn"
 
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/fj15"
+	"github.com/erjiaqing/PCIJudger2/pkg/fj15"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,6 +1,6 @@
 package fj15
 
-import "github.com/erjiaqing/problem-ci-judger-2/pkg/hostconn"
+import "github.com/erjiaqing/PCIJudger2/pkg/hostconn"
 
 type Config struct {
 	Tmp             string        `json:"tmp"`

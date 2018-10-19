@@ -10,8 +10,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/hostconn/message"
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/util"
+	"github.com/erjiaqing/PCIJudger2/pkg/hostconn/message"
+	"github.com/erjiaqing/PCIJudger2/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 

@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/executor"
+	"github.com/erjiaqing/PCIJudger2/pkg/executor"
 	"github.com/sirupsen/logrus"
 )
 

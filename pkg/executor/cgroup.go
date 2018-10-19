@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/erjiaqing/problem-ci-judger-2/pkg/util"
+	"github.com/erjiaqing/PCIJudger2/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
