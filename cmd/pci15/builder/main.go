@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/erjiaqing/PCIJudger2/pkg/fj15"
+	"github.com/erjiaqing/PCIJudger2/pkg/pci15"
 	"github.com/sirupsen/logrus"
 )
 
-var conf = &fj15.Config{
+var conf = &pci15.Config{
 	Tmp:             os.TempDir(),
 	Problem:         "/input",
 	LanguageStorage: "/language",
@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 	src := conf.Problem
 	dst := conf.ProblemPath
-	res, err := fj15.BuildProblem(src, dst, conf)
+	res, err := pci15.BuildProblem(src, dst, conf)
 	if err != nil {
 		logrus.Fatalf("Failed to build problem: %v", err)
 	}

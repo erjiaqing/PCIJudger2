@@ -8,11 +8,11 @@ import (
 
 	"github.com/erjiaqing/PCIJudger2/pkg/hostconn"
 
-	"github.com/erjiaqing/PCIJudger2/pkg/fj15"
+	"github.com/erjiaqing/PCIJudger2/pkg/pci15"
 	"github.com/sirupsen/logrus"
 )
 
-var conf = &fj15.Config{
+var conf = &pci15.Config{
 	Tmp:             os.TempDir(),
 	Problem:         "/input",
 	LanguageStorage: "/language",
@@ -20,7 +20,7 @@ var conf = &fj15.Config{
 	MirrorFSConfig:  "/.mirrorfs.conf",
 	MaxJudgeThread:  1,
 }
-var code = &fj15.SourceCode{
+var code = &pci15.SourceCode{
 	Language: "",
 	Source:   "/code",
 }
@@ -51,7 +51,7 @@ func main() {
 	if conf.MaxJudgeThread <= 0 {
 		conf.MaxJudgeThread = 1
 	}
-	res, err := fj15.Judge(conf, code, conf.Problem)
+	res, err := pci15.Judge(conf, code, conf.Problem)
 	if err != nil {
 		logrus.Fatalf("Failed to judge code: %v", err)
 	}

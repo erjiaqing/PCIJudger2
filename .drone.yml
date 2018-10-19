@@ -7,23 +7,23 @@ pipeline:
     group: build
     image: golang:1.11
     commands:
-      - cd cmd/fj15/builder
+      - cd cmd/pci15/builder
       - go build
   SubmissionJudger:
     group: build
     image: golang:1.11
     commands:
-      - cd cmd/fj15/judger
+      - cd cmd/pci15/judger
       - go build
   ProblemBuilder-Go1.10:
     group: build
     image: golang:1.10
     commands:
-      - cd cmd/fj15/builder
+      - cd cmd/pci15/builder
       - go build
   SubmissionJudger-Go1.10:
     group: build
     image: golang:1.10
     commands:
-      - cd cmd/fj15/judger
+      - cd cmd/pci15/judger
       - go build

@@ -1,4 +1,4 @@
-package fj15
+package pci15
 
 import "github.com/erjiaqing/PCIJudger2/pkg/hostconn"
 
