@@ -74,7 +74,7 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 }
 
 func GetProblem(conf *Config, problem, problemGit, problemVersion string) error {
-	logrus.Info("Get problem: %s:%s", problemGit, problemVersion)
+	logrus.Infof("Get problem: %s:%s", problemGit, problemVersion)
 
 	problemDir := filepath.Join(conf.ProblemPath, problem)
 	tmpDir := filepath.Join(conf.Tmp, GetRandomString())

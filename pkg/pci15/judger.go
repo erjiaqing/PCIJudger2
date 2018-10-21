@@ -6,8 +6,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 
+	"github.com/erjiaqing/PCIJudger2/pkg/builtin_cmp"
 	"github.com/sirupsen/logrus"
 	shutil "github.com/termie/go-shutil"
 )
@@ -46,7 +49,7 @@ func (j *JudgeResult) Append(testCase int, detail *JudgeDetail) int {
 	j.judgeResult[testCase] = detail
 	if testCase > j.lastTest {
 		for {
-			if _, ok := j.judgeResult[j.lastTest+1]; ok {
+			if val, ok := j.judgeResult[j.lastTest+1]; ok && val.Verdict == "AC" {
 				j.lastTest++
 			} else {
 				break
@@ -72,6 +75,40 @@ func (j *JudgeResult) Collect(testCase int) {
 			}
 		}
 	}
+}
+
+func fastMode(problemPath string, problemConf *ProblemConfig) error {
+	outputs := make(map[string]string)
+	inputList := make([]string, 0)
+	err := filepath.Walk(problemPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		if path2, err := filepath.Rel(problemPath, path); err == nil {
+			path = path2
+		}
+		if strings.HasSuffix(path, ".in") {
+			baseName := path[0 : len(path)-3]
+			inputList = append(inputList, baseName)
+		} else if strings.HasSuffix(path, ".out") || strings.HasSuffix(path, ".ans") {
+			baseName := path[0 : len(path)-4]
+			outputs[baseName] = path
+		}
+		return nil
+	})
+	sort.Strings(inputList)
+	if err != nil {
+		return err
+	}
+	for _, input := range inputList {
+		if output, ok := outputs[input]; ok {
+			problemConf.Case = append(problemConf.Case, TestCase{
+				Input:  input + ".in",
+				Output: output,
+			})
+		}
+	}
+	return nil
 }
 
 func doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execCommand *ExecuteCommand, timeLimit float32, codeLanguage *Language, chrootName, problem string, checkerCmd, interCmd []string) (*JudgeDetail, bool) {
@@ -124,6 +161,17 @@ func doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execComm
 		return resDetail, false
 	}
 
+	if problemConf.Checker.Source[0] == '!' {
+		checkerRes, err := builtin_cmp.Diff[problemConf.Checker.Source](judgeUid+".stdout", filepath.Join(problem, testInfo.Output))
+		if err != nil {
+			resDetail.Verdict = "SE"
+			resDetail.Comment = err.Error()
+		} else if !checkerRes {
+			resDetail.Verdict = "WA"
+		}
+		return resDetail, checkerRes
+	}
+
 	tcheckerCmd := append(checkerCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output))
 
 	checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit*1024*1024, 1., "", false, "-", judgeUid+".checker.stderr", judgeUid+".checker.stderr")
@@ -147,8 +195,23 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}
 
 	problemConf := &ProblemConfig{}
+
 	if err := loadYAML(filepath.Join(problem, "problem.yaml"), problemConf); err != nil {
-		return nil, err
+		logrus.Warningf("Failed to find problem.yaml, enter fast mode...")
+		problemConf.TimeLimit = 1000
+		problemConf.MemoryLimit = 512
+		if err := fastMode(problem, problemConf); err != nil {
+			logrus.Errorf("Failed to generate fase mode test cases: %v", err)
+			return nil, err
+		}
+	}
+
+	if problemConf.Checker == nil {
+		problemConf.Checker = &SourceCode{}
+	}
+
+	if problemConf.Checker.Source == "" {
+		problemConf.Checker.Source = "!diff"
 	}
 
 	workDir := filepath.Join(conf.Tmp, GetRandomString())
