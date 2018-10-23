@@ -3,6 +3,7 @@ package pci15
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -220,10 +221,37 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}
 	//defer os.RemoveAll(workDir)
 
-	if source, err := shutil.Copy(code.Source, filepath.Join(workDir, filepath.Base(code.Source)), false); err != nil {
+	header := make([]byte, 0)
+	footer := make([]byte, 0)
+	codeBin := make([]byte, 0)
+
+	if problemConf.Template != "" {
+		header, _ = ioutil.ReadFile(filepath.Join(problem, problemConf.Template+".header."+code.Language))
+		footer, _ = ioutil.ReadFile(filepath.Join(problem, problemConf.Template+".footer."+code.Language))
+	}
+
+	codeBin, _ = ioutil.ReadFile(code.Source)
+
+	if err := func() error {
+		fp, err := os.OpenFile(filepath.Join(workDir, filepath.Base(code.Source)), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		defer fp.Close()
+		if _, err := fp.Write(header); err != nil {
+			return err
+		}
+		if _, err := fp.Write(codeBin); err != nil {
+			return err
+		}
+		if _, err := fp.Write(footer); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
 	} else {
-		code.Source = source
+		code.Source = filepath.Join(workDir, filepath.Base(code.Source))
 	}
 
 	if currentDir, err := os.Getwd(); err != nil {

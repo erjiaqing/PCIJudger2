@@ -11,6 +11,7 @@ type ProblemConfig struct {
 	TimeLimit   uint64      `json:"timelimit"`
 	MemoryLimit uint64      `json:"memorylimit"`
 	Name        string      `json:"name,omitempty"`
+	Template    string      `json:"template"`
 	Checker     *SourceCode `json:"checker"`
 	Interactor  *SourceCode `json:"interactor,omitempty"`
 	ExtraFile   []string    `json:"additionalLibrary,omitempty"`
