@@ -26,10 +26,12 @@ type SourceCode struct {
 }
 
 type TestCase struct {
-	Input       string `json:"input"`
-	Output      string `json:"output"`
-	TimeLimit   uint64 `json:"time,omitempty"`
-	MemoryLimit uint64 `json:"memoryLimit,omitempty"`
+	Dependencies []string `json:"dep"`
+	Score        int      `json:"score"`
+	Input        string   `json:"input"`
+	Output       string   `json:"output"`
+	TimeLimit    uint64   `json:"time,omitempty"`
+	MemoryLimit  uint64   `json:"memoryLimit,omitempty"`
 }
 
 type Language struct {

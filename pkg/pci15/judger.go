@@ -23,9 +23,12 @@ type JudgeResult struct {
 	ExeMemory   uint64         `json:"exe_memory"`
 	ExitCode    int32          `json:"exit_code"`
 	UsedTime    uint64         `json:"used_time"`
+	Score       int            `json:"score"`
+	FullScore   int            `json:"full_score"`
 	Detail      []*JudgeDetail `json:"detail"`
 	lastTest    int
 	judgeResult map[int]*JudgeDetail
+	judgeState  *sync.Map
 }
 
 type JudgeDetail struct {
@@ -34,6 +37,7 @@ type JudgeDetail struct {
 	Output     string `json:"output,omitempty"`
 	Answer     string `json:"answer,omitempty"`
 	Comment    string `json:"comment,omitempty"`
+	Score      int    `json:"score"`
 	Verdict    string `json:"verdict"`
 	ExeTime    uint64 `json:"exe_time"`
 	ExeMemory  uint64 `json:"exe_memory"`
@@ -50,7 +54,7 @@ func (j *JudgeResult) Append(testCase int, detail *JudgeDetail) int {
 	j.judgeResult[testCase] = detail
 	if testCase > j.lastTest {
 		for {
-			if val, ok := j.judgeResult[j.lastTest+1]; ok && val.Verdict == "AC" {
+			if _, ok := j.judgeResult[j.lastTest+1]; ok {
 				j.lastTest++
 			} else {
 				break
@@ -60,22 +64,68 @@ func (j *JudgeResult) Append(testCase int, detail *JudgeDetail) int {
 	return j.lastTest
 }
 
-func (j *JudgeResult) Collect(testCase int) {
+func (j *JudgeResult) Collect(problemConf *ProblemConfig, testCase int) {
 	for i := 0; i < testCase; i++ {
 		if val, ok := j.judgeResult[i]; ok {
-			j.Detail = append(j.Detail, val)
+			shouldJudge := true
+			for _, dep := range problemConf.Case[i].Dependencies {
+				if !j.checkPass(dep) {
+					shouldJudge = false
+				}
+			}
+
+			if shouldJudge {
+				j.Detail = append(j.Detail, val)
+			} else {
+				j.Detail = append(j.Detail, &JudgeDetail{
+					Verdict: "IG",
+					Name:    val.Name,
+				})
+			}
+			j.judgeState.Store(problemConf.Case[i].Input, j.Detail[i].Verdict)
+
 			if val.ExeTime > j.ExeTime {
 				j.ExeTime = val.ExeTime
 			}
 			if val.ExeMemory > j.ExeMemory {
 				j.ExeMemory = val.ExeMemory
 			}
-			if val.Verdict != "AC" {
+
+			j.Score += val.Score
+
+			if j.Verdict == "AC" && val.Verdict != "AC" {
 				j.Verdict = val.Verdict
-				break
 			}
 		}
 	}
+}
+
+func (j *JudgeResult) checkPass(t string) bool {
+	status, ok := j.judgeState.Load(t)
+	if !ok {
+		return false
+	}
+	statusStr := status.(string)
+	return statusStr == "AC" || statusStr == "NJ"
+}
+
+func (j *JudgeResult) prepareProblemConf(problemConf *ProblemConfig) error {
+	for i, _ := range problemConf.Case {
+		if len(problemConf.Case[i].Dependencies) == 0 && i > 0 {
+			problemConf.Case[i].Dependencies = append(problemConf.Case[i].Dependencies, problemConf.Case[i-1].Input)
+		} else {
+			for _, p := range problemConf.Case[i].Dependencies {
+				if _, ok := j.judgeState.Load(p); !ok {
+					return fmt.Errorf("Input ``%s'' appears not before test case ``%s'', cycle dependencies might happen, use checkpoint instead.", p, problemConf.Case[i].Input)
+				}
+			}
+		}
+		if _, ok := j.judgeState.Load(problemConf.Case[i].Input); ok {
+			return fmt.Errorf("Input ``%s'' appears more than once, which is no sense.", problemConf.Case[i].Input)
+		}
+		j.judgeState.Store(problemConf.Case[i].Input, "NJ")
+	}
+	return nil
 }
 
 func fastMode(problemPath string, problemConf *ProblemConfig) error {
@@ -106,20 +156,43 @@ func fastMode(problemPath string, problemConf *ProblemConfig) error {
 			problemConf.Case = append(problemConf.Case, TestCase{
 				Input:  input + ".in",
 				Output: output,
+				Score:  1,
 			})
 		}
 	}
 	return nil
 }
 
-func doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execCommand *ExecuteCommand, timeLimit float32, codeLanguage *Language, chrootName, problem string, checkerCmd, interCmd []string) (*JudgeDetail, bool) {
+func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execCommand *ExecuteCommand, timeLimit float32, codeLanguage *Language, chrootName, problem string, checkerCmd, interCmd []string) (*JudgeDetail, bool) {
 	logrus.Infof("Judging test %d", testId+1)
 
 	judgeUid := GetRandomString()
+	checkPoint := false
+
+	input := testInfo.Input
 
 	resDetail := &JudgeDetail{
-		Name:    fmt.Sprintf("Test #%d", testId+1),
+		Name:    fmt.Sprintf("#%d (Test)", testId+1),
 		Verdict: "AC",
+	}
+
+	if input[0] == '*' {
+		checkPoint = true
+		resDetail.Name = fmt.Sprintf("#%d (Checkpoint)", testId+1)
+		resDetail.Verdict = "AC"
+		resDetail.Score = testInfo.Score
+	}
+
+	for _, dep := range testInfo.Dependencies {
+		if !j.checkPass(dep) {
+			resDetail.Verdict = "IG"
+			resDetail.Score = 0
+			return resDetail, false
+		}
+	}
+
+	if checkPoint {
+		return resDetail, true
 	}
 
 	var execResult, interactorResult *ExecuteResult
@@ -169,6 +242,8 @@ func doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execComm
 			resDetail.Comment = err.Error()
 		} else if !checkerRes {
 			resDetail.Verdict = "WA"
+		} else {
+			resDetail.Score = testInfo.Score
 		}
 		return resDetail, checkerRes
 	}
@@ -186,6 +261,8 @@ func doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execComm
 		resDetail.Verdict = "WA"
 		return resDetail, false
 	}
+
+	resDetail.Score = testInfo.Score
 	return resDetail, true
 }
 
@@ -193,6 +270,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	judgeResult := &JudgeResult{
 		Success:     true,
 		judgeResult: make(map[int]*JudgeDetail),
+		judgeState:  &sync.Map{},
 	}
 
 	problemConf := &ProblemConfig{}
@@ -202,10 +280,12 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		problemConf.TimeLimit = 1000
 		problemConf.MemoryLimit = 512
 		if err := fastMode(problem, problemConf); err != nil {
-			logrus.Errorf("Failed to generate fase mode test cases: %v", err)
+			logrus.Errorf("Failed to generate fast mode test cases: %v", err)
 			return nil, err
 		}
 	}
+
+	judgeResult.prepareProblemConf(problemConf)
 
 	if problemConf.Checker == nil {
 		problemConf.Checker = &SourceCode{}
@@ -338,14 +418,13 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	countTestCase := len(problemConf.Case)
 
 	for testId, testInfo := range problemConf.Case {
+		judgeResult.FullScore += testInfo.Score
 		judgeChan <- &JudgeRequest{
 			Id:   testId,
 			Case: testInfo,
 		}
 	}
 	close(judgeChan)
-
-	endOfJudge := false
 
 	var wg sync.WaitGroup
 
@@ -358,30 +437,26 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 			for {
 				mut.Lock()
 				val, ok := <-judgeChan
-				eoj := endOfJudge
 				mut.Unlock()
 				if !ok {
 					break
 				}
-				if eoj {
-					continue
-				}
-				detail, cont := doJudge(val.Id, val.Case, problemConf, execCommand, timeLimit, codeLanguage, chrootName, problem, checkerCmd, interCmd)
+
+				detail, _ := judgeResult.doJudge(val.Id, val.Case, problemConf, execCommand, timeLimit, codeLanguage, chrootName, problem, checkerCmd, interCmd)
 
 				mut.Lock()
+
+				judgeResult.judgeState.Store(val.Case.Input, detail.Verdict)
 				judged := judgeResult.Append(val.Id, detail) + 1
 
 				conf.HostSocket.SendStatus("10", 100*judged/countTestCase)
 				logrus.Infof("%d / %d Test Judged", judged, countTestCase)
-				if !cont {
-					endOfJudge = true
-				}
 				mut.Unlock()
 			}
 		}()
 	}
 	wg.Wait()
 
-	judgeResult.Collect(countTestCase)
+	judgeResult.Collect(problemConf, countTestCase)
 	return judgeResult, nil
 }
