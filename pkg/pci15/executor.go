@@ -20,7 +20,7 @@ type ExecuteResult struct {
 	ExitReason string  `json:"exceeded"`
 }
 
-func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio float32, chroot string, limitSyscall bool, stdin, stdout, stderr string) (*ExecuteResult, error) {
+func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio float32, chroot, workdir string, limitSyscall bool, stdin, stdout, stderr string) (*ExecuteResult, error) {
 	cpuTimelimit := timeLimit * timeRatio
 	realTimelimit := cpuTimelimit * 1.5
 	runCommand := []string{
@@ -45,7 +45,7 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 			"--remount-dev",
 			"true",
 			"--chdir",
-			"/",
+			workdir,
 			"--syscalls",
 			"!execve,flock,ptrace,sync,fdatasync,fsync,msync,sync_file_range,syncfs,unshare,setns,clone[a&268435456==268435456],query_module,sysinfo,syslog,sysfs",
 		}...)
@@ -115,7 +115,7 @@ func Execute(cmd []string, timeLimit float32, memoryLimit uint64, timeRatio floa
 	return executorOutput, nil
 }
 
-func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit uint64, timeRatio float32, chroot string, limitSyscall bool) (*ExecuteResult, *ExecuteResult, error) {
+func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit uint64, timeRatio float32, chroot, workdir string, limitSyscall bool) (*ExecuteResult, *ExecuteResult, error) {
 	cpuTimelimit := timeLimit * timeRatio
 	realTimelimit := cpuTimelimit * 3
 	runCommand := []string{
@@ -140,7 +140,7 @@ func ExecuteInteractor(cmd, interactor []string, timeLimit float32, memoryLimit 
 			"--remount-dev",
 			"true",
 			"--chdir",
-			"/tmp",
+			workdir,
 			"--syscalls",
 			"!execve,flock,ptrace,sync,fdatasync,fsync,msync,sync_file_range,syncfs,unshare,setns,clone[a&268435456==268435456],query_module,sysinfo,syslog,sysfs",
 		}...)

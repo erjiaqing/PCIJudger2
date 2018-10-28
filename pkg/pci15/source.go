@@ -44,34 +44,36 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 					continue
 				}
 				matchRes := res.FindStringSubmatch(SourceCode)
-				if variable.MatchTo < len(matchRes) && variable.MatchTo >= 0 {
-					Variables[name] = matchRes[variable.MatchTo]
+				if variable.Match < len(matchRes) && variable.Match >= 0 {
+					Variables[name] = matchRes[variable.Match]
+					logrus.Infof("[%s] -> %s\n", name, matchRes[variable.Match])
 				}
 			case "string":
 				Variables[name] = variable.Value
+				logrus.Infof("[%s] -> %s\n", name, variable.Value)
 			}
 		}
 	}
 	ret := &ExecuteCommand{}
 	ret.Source = language.Source
 	for k, v := range Variables {
-		ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, -1)
+		ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, 1000000)
 	}
 	ret.Executable = language.Executable
 	for k, v := range Variables {
-		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, -1)
+		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, 1000000)
 	}
 	Variables["source"] = ret.Source
 	Variables["executable"] = ret.Executable
 	for _, str := range language.Compile.Cmd {
 		for k, v := range Variables {
-			str = strings.Replace(str, "{"+k+"}", v, -1)
+			str = strings.Replace(str, "{"+k+"}", v, 1000000)
 		}
 		ret.Compile = append(ret.Compile, str)
 	}
 	for _, str := range language.Execute.Cmd {
 		for k, v := range Variables {
-			str = strings.Replace(str, "{"+k+"}", v, -1)
+			str = strings.Replace(str, "{"+k+"}", v, 1000000)
 		}
 		ret.Execute = append(ret.Execute, str)
 	}
@@ -94,7 +96,7 @@ func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
 		return "", err
 	}
 
-	compileRes, err := Execute(compileCfg.Compile, lang.Compile.TimeLimit, 1024*1024*1024, 1.0, "", false, "-", "-", "compile_error")
+	compileRes, err := Execute(compileCfg.Compile, lang.Compile.TimeLimit, 1024*1024*1024, 1.0, "", "", false, "-", "-", "compile_error")
 	if err != nil {
 		return "", err
 	}

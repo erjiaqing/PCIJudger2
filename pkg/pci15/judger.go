@@ -1,7 +1,6 @@
 package pci15
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -163,7 +162,7 @@ func fastMode(problemPath string, problemConf *ProblemConfig) error {
 	return nil
 }
 
-func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execCommand *ExecuteCommand, timeLimit float32, codeLanguage *Language, chrootName, problem string, checkerCmd, interCmd []string) (*JudgeDetail, bool) {
+func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *ProblemConfig, execCommand *ExecuteCommand, timeLimit float32, codeLanguage *Language, chrootName, workdir, problem string, checkerCmd, interCmd []string) (*JudgeDetail, bool) {
 	logrus.Infof("Judging test %d", testId+1)
 
 	judgeUid := GetRandomString()
@@ -198,14 +197,14 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 	var execResult, interactorResult *ExecuteResult
 	var err error
 	if problemConf.Interactor == nil {
-		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", "-")
+		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", "-")
 		if err != nil {
 			resDetail.Verdict = "SE"
 			resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
 			return resDetail, false
 		}
 	} else {
-		execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), true)
+		execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true)
 		if err != nil {
 			resDetail.Verdict = "SE"
 			resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
@@ -231,6 +230,11 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 		resDetail.Verdict = execResult.ExitReason
 		return resDetail, false
 	} else if execResult.ExitCode != 0 || execResult.ExitSignal != 0 || execResult.TermSignal != 0 {
+		resDetail.ExitCode = execResult.ExitCode
+		resDetail.ExitSignal = execResult.ExitSignal
+		if execResult.ExitSignal == 0 {
+			resDetail.ExitSignal = -execResult.TermSignal
+		}
 		resDetail.Verdict = "RE"
 		return resDetail, false
 	}
@@ -250,7 +254,7 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 
 	tcheckerCmd := append(checkerCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output))
 
-	checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit*1024*1024, 1., "", false, "-", judgeUid+".checker.stderr", judgeUid+".checker.stderr")
+	checkerResult, err := Execute(tcheckerCmd, 10., problemConf.MemoryLimit*1024*1024, 1., "", "-", false, "-", judgeUid+".checker.stderr", judgeUid+".checker.stderr")
 	resDetail.Comment, _ = ReadFirstBytes(judgeUid+".checker.stderr", 128)
 
 	if err != nil {
@@ -312,8 +316,13 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	codeBin, _ = ioutil.ReadFile(code.Source)
 
+	execCommand, codeLanguage, err := GetExecuteCommand(code, conf)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := func() error {
-		fp, err := os.OpenFile(filepath.Join(workDir, filepath.Base(code.Source)), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+		fp, err := os.OpenFile(filepath.Join(workDir, execCommand.Source), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -331,8 +340,27 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}(); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
 	} else {
-		code.Source = filepath.Join(workDir, filepath.Base(code.Source))
+		code.Source = filepath.Join(workDir, execCommand.Source)
 	}
+
+	if err := func() error {
+		fp, err := os.OpenFile(filepath.Join(workDir, "mirrorfs.conf"), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+		if err != nil {
+			return err
+		}
+		defer fp.Close()
+		mirrorfs := make([]byte, 0)
+		mirrorfs, _ = ioutil.ReadFile(conf.MirrorFSConfig)
+		fp.Write(mirrorfs)
+		fp.Write([]byte(fmt.Sprintf("mirror %s", workDir)))
+		return nil
+	}(); err != nil {
+		return nil, fmt.Errorf("failed to copy source: %v", err)
+	} else {
+		code.Source = filepath.Join(workDir, execCommand.Source)
+	}
+
+	logrus.Infof("Code source name: %s", code.Source)
 
 	if currentDir, err := os.Getwd(); err != nil {
 		return nil, err
@@ -340,11 +368,6 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		return nil, err
 	} else {
 		defer os.Chdir(currentDir)
-	}
-
-	execCommand, codeLanguage, err := GetExecuteCommand(code, conf)
-	if err != nil {
-		return nil, err
 	}
 
 	newCode := &SourceCode{
@@ -376,7 +399,17 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		})
 		return judgeResult, nil
 	} else if err != nil {
-		return nil, errors.New("Syetem Error")
+		judgeResult.Verdict = "CE"
+		judgeResult.Detail = append(judgeResult.Detail, &JudgeDetail{
+			Name:       "compile",
+			Verdict:    "CE",
+			Output:     err.Error(),
+			ExeTime:    0,
+			ExeMemory:  0,
+			ExitCode:   0,
+			ExitSignal: 0,
+		})
+		return judgeResult, nil
 	}
 
 	conf.HostSocket.SendStatus("02", 0)
@@ -389,14 +422,14 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	chrootName := GetRandomString()
 	if err := func() error {
 		logrus.Infof("Setting up mirrorfs: /run/%s ...", chrootName)
-		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", conf.MirrorFSConfig)
+		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", filepath.Join(workDir, "mirrorfs.conf"))
 		return chrootCmd.Run()
 	}(); err != nil {
 		return nil, err
 	} else {
 		defer func() error {
 			logrus.Infof("Tearing down mirrorfs: /run/%s ...", chrootName)
-			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", conf.MirrorFSConfig)
+			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", filepath.Join(workDir, "mirrorfs.conf"))
 			return chrootCmd.Run()
 		}()
 	}
@@ -442,7 +475,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 					break
 				}
 
-				detail, _ := judgeResult.doJudge(val.Id, val.Case, problemConf, execCommand, timeLimit, codeLanguage, chrootName, problem, checkerCmd, interCmd)
+				detail, _ := judgeResult.doJudge(val.Id, val.Case, problemConf, execCommand, timeLimit, codeLanguage, chrootName, workDir, problem, checkerCmd, interCmd)
 
 				mut.Lock()
 

@@ -40,10 +40,9 @@ type Language struct {
 	} `json:"meta"`
 	Variable []*struct {
 		Name    string `json:"name"`
-		Match   string `json:"match"`
+		Match   int    `json:"match"`
 		Type    string `json:"type"`
 		Value   string `json:"value"`
-		MatchTo int    `json:"to_match"`
 		Default string `json:"default"`
 	} `json:"variable"`
 	Source     string `json:"source"`
