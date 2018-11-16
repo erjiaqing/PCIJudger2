@@ -429,14 +429,14 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	chrootName := GetRandomString()
 	if err := func() error {
 		logrus.Infof("Setting up mirrorfs: /fj_tmp/mirrorfs/%s ...", chrootName)
-		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", filepath.Join(workDir, "mirrorfs.conf"))
+		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", conf.MirrorFSConfig)
 		return chrootCmd.Run()
 	}(); err != nil {
 		return nil, err
 	} else {
 		defer func() error {
 			logrus.Infof("Tearing down mirrorfs: /fj_tmp/mirrorfs/%s ...", chrootName)
-			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", filepath.Join(workDir, "mirrorfs.conf"))
+			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", conf.MirrorFSConfig)
 			return chrootCmd.Run()
 		}()
 	}

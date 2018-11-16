@@ -8,7 +8,7 @@ import (
 
 type ProblemConfig struct {
 	Version     int         `json:"version"`
-	TimeLimit   uint64      `json:"timelimit"`
+	TimeLimit   uint64      `json:"time"`
 	MemoryLimit uint64      `json:"memorylimit"`
 	Name        string      `json:"name,omitempty"`
 	Template    string      `json:"template"`
