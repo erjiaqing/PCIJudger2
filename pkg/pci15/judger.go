@@ -18,7 +18,7 @@ import (
 type JudgeResult struct {
 	Success     bool           `json:"success"`
 	Verdict     string         `json:"verdict"`
-	ExeTime     uint64         `json:"exe_time"`
+	ExeTime     float32        `json:"exe_time"`
 	ExeMemory   uint64         `json:"exe_memory"`
 	ExitCode    int32          `json:"exit_code"`
 	UsedTime    uint64         `json:"used_time"`
@@ -31,17 +31,17 @@ type JudgeResult struct {
 }
 
 type JudgeDetail struct {
-	Name       string `json:"name"`
-	Input      string `json:"input,omitempty"`
-	Output     string `json:"output,omitempty"`
-	Answer     string `json:"answer,omitempty"`
-	Comment    string `json:"comment,omitempty"`
-	Score      int    `json:"score"`
-	Verdict    string `json:"verdict"`
-	ExeTime    uint64 `json:"exe_time"`
-	ExeMemory  uint64 `json:"exe_memory"`
-	ExitCode   int32  `json:"exit_code"`
-	ExitSignal int32  `json:"exit_signal"`
+	Name       string  `json:"name"`
+	Input      string  `json:"input,omitempty"`
+	Output     string  `json:"output,omitempty"`
+	Answer     string  `json:"answer,omitempty"`
+	Comment    string  `json:"comment,omitempty"`
+	Score      int     `json:"score"`
+	Verdict    string  `json:"verdict"`
+	ExeTime    float32 `json:"exe_time"`
+	ExeMemory  uint64  `json:"exe_memory"`
+	ExitCode   int32   `json:"exit_code"`
+	ExitSignal int32   `json:"exit_signal"`
 }
 
 type JudgeRequest struct {
@@ -219,8 +219,8 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 		}
 	}
 
-	resDetail.ExeTime = uint64(1000 * execResult.CPUTime)
-	resDetail.ExeMemory = execResult.ExeMemory
+	resDetail.ExeTime = execResult.CPUTime
+	resDetail.ExeMemory = execResult.ExeMemory / 1024
 
 	resDetail.Input, _ = ReadFirstBytes(filepath.Join(problem, testInfo.Input), 128)
 	resDetail.Output, _ = ReadFirstBytes(judgeUid+".stdout", 128)
@@ -392,7 +392,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 			Name:       "compile",
 			Verdict:    "CE",
 			Output:     compilerOutput,
-			ExeTime:    uint64(newCode.CompileResult.RealTime * 1000),
+			ExeTime:    newCode.CompileResult.RealTime,
 			ExeMemory:  newCode.CompileResult.ExeMemory,
 			ExitCode:   newCode.CompileResult.ExitCode,
 			ExitSignal: newCode.CompileResult.ExitSignal,
