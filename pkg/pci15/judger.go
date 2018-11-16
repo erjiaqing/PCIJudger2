@@ -354,7 +354,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		mirrorfs := make([]byte, 0)
 		mirrorfs, _ = ioutil.ReadFile(conf.MirrorFSConfig)
 		fp.Write(mirrorfs)
-		fp.Write([]byte(fmt.Sprintf("mirror %s", workDir)))
+		//fp.Write([]byte(fmt.Sprintf("mirror %s", workDir)))
 		return nil
 	}(); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
