@@ -197,7 +197,7 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 	var execResult, interactorResult *ExecuteResult
 	var err error
 	if problemConf.Interactor == nil {
-		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", judgeUid+".stderr")
+		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/fj_tmp", chrootName), workdir, true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", judgeUid+".stderr")
 		if err != nil {
 			resDetail.Verdict = "SE"
 			resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
@@ -206,7 +206,7 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 			return resDetail, false
 		}
 	} else {
-		execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true)
+		execResult, interactorResult, err = ExecuteInteractor(execCommand.Execute, append(interCmd, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", filepath.Join(problem, testInfo.Output)), timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/fj_tmp", chrootName), workdir, true)
 		if err != nil {
 			resDetail.Verdict = "SE"
 			resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
@@ -423,14 +423,14 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	judgeResult.Verdict = "AC"
 	chrootName := GetRandomString()
 	if err := func() error {
-		logrus.Infof("Setting up mirrorfs: /run/%s ...", chrootName)
+		logrus.Infof("Setting up mirrorfs: /fj_tmp/%s ...", chrootName)
 		chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--setup", filepath.Join(workDir, "mirrorfs.conf"))
 		return chrootCmd.Run()
 	}(); err != nil {
 		return nil, err
 	} else {
 		defer func() error {
-			logrus.Infof("Tearing down mirrorfs: /run/%s ...", chrootName)
+			logrus.Infof("Tearing down mirrorfs: /fj_tmp/%s ...", chrootName)
 			chrootCmd := exec.Command("/usr/local/bin/lrun-mirrorfs", "--name", chrootName, "--teardown", filepath.Join(workDir, "mirrorfs.conf"))
 			return chrootCmd.Run()
 		}()
