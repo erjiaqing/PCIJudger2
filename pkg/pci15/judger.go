@@ -302,8 +302,13 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}
 
 	workDir := filepath.Join(conf.Tmp, GetRandomString())
-	if err := os.MkdirAll(workDir, 0777); err != nil {
-		return nil, err
+
+	if !conf.IsDocker {
+		if err := os.MkdirAll(workDir, 0777); err != nil {
+			return nil, err
+		}
+	} else {
+		workDir = conf.Tmp
 	}
 	//defer os.RemoveAll(workDir)
 

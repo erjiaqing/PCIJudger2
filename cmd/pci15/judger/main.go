@@ -14,6 +14,7 @@ import (
 
 var conf = &pci15.Config{
 	Tmp:             os.TempDir(),
+	IsDocker:        false,
 	Problem:         "/input",
 	LanguageStorage: "/language",
 	ProblemPath:     "/output",
@@ -33,6 +34,7 @@ var (
 
 func init() {
 	flag.StringVar(&conf.Tmp, "tempdir", conf.Tmp, "tempory directory")
+	flag.BoolVar(&conf.IsDocker, "docker", conf.IsDocker, "is running in docker?")
 	flag.StringVar(&conf.Problem, "problem", conf.Problem, "problem path")
 	flag.StringVar(&conf.LanguageStorage, "langconf", conf.LanguageStorage, "path to store languages")
 	flag.StringVar(&conf.ProblemPath, "output", conf.ProblemPath, "path to output problem")
