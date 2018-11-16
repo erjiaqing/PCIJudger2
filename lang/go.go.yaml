@@ -2,8 +2,8 @@ meta:
   name: "Go"
 validsuff: "go"
 default: main.go
-source: "{filename}"
-executable: "{filename}.exe"
+source: "main.go"
+executable: "main.exe"
 compile:
   args:
     - "/usr/lib/go-1.9/bin/go"

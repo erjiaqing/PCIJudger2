@@ -1,8 +1,8 @@
 meta:
   name: Python 3.6
 default: "main.py"
-source: "{filename}"
-executable: "{filename}.pyo"
+source: "main.py"
+executable: "main.pyo"
 compile:
   args:
     - "/usr/bin/python3"

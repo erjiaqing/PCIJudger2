@@ -2,8 +2,8 @@ meta:
   name: "C++11 with GNU GCC"
 validsuff: "(cpp|cc)"
 default: main.cpp
-source: "{filename}"
-executable: "{filename}.exe"
+source: "main.cpp"
+executable: "main.exe"
 compile:
   args:
     - "/usr/bin/g++"
