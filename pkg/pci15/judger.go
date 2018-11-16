@@ -197,10 +197,12 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 	var execResult, interactorResult *ExecuteResult
 	var err error
 	if problemConf.Interactor == nil {
-		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", "-")
+		execResult, err = Execute(execCommand.Execute, timeLimit, problemConf.MemoryLimit*1024*1024, codeLanguage.Execute.TimeRatio, filepath.Join("/run", chrootName), workdir, true, filepath.Join(problem, testInfo.Input), judgeUid+".stdout", judgeUid+".stderr")
 		if err != nil {
 			resDetail.Verdict = "SE"
 			resDetail.Comment = fmt.Sprintf("Failed to execute code: %v", err)
+			stderr, _ := ReadFirstBytes(judgeUid+".stderr", 1024)
+			logrus.Errorf("Datail: %s", stderr)
 			return resDetail, false
 		}
 	} else {
