@@ -1,0 +1,24 @@
+meta:
+  name: Java 1.8
+variable:
+  - name: mainclass
+    type: regexp
+    value: "[^{}]*public\\s+(final)?\\s*class\\s+(\\w+).*"
+    match: 2
+default: "Main.java"
+source: "{mainclass}.java"
+executable: "{mainclass}.class"
+compile:
+  args:
+    - "/usr/bin/javac"
+    - "-cp"
+    - ".;*"
+    - "{source}"
+  timelimit: 10.0
+execute:
+  cmd:
+    - "/usr/bin/java"
+    - "-Xmx512M"
+    - "-Xss256M"
+    - "{mainclass}"
+  timeratio: 2.0
