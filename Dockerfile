@@ -3,12 +3,12 @@ FROM golang:1.11 as file_container
 COPY /lang /fj/lang
 COPY /kotlinc /fj/kotlinc
 COPY /lrun /fj/lrun
+COPY ["mirrorfs.conf", "/fj/"]
 
 FROM golang:1.11 as builder
 COPY /vendor /go/src/github.com/erjiaqing/PCIJudger2/vendor
 COPY /cmd /go/src/github.com/erjiaqing/PCIJudger2/cmd
 COPY /pkg /go/src/github.com/erjiaqing/PCIJudger2/pkg
-COPY ["mirrorfs.conf", "/fj/"]
 RUN cd /go/src/github.com/erjiaqing/PCIJudger2/cmd/pci15/judger && go build
 
 
