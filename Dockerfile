@@ -16,12 +16,12 @@ FROM ubuntu:16.04
 VOLUME ["/problem", "/code"]
 
 RUN apt-get update && apt-get install software-properties-common -y && \
-    add-apt-repository ppa:gophers/archive && \
+    add-apt-repository longsleep/golang-backports && \
     apt-get update && \
     apt-get install -y \
         build-essential \
-        python3 python3-pip \
-        golang-1.9-go \
+        python3 \
+        golang-1.11 \
         mono-mcs mono-runtime \
         openjdk-8-jdk-headless \
         fpc \
@@ -30,8 +30,7 @@ RUN apt-get update && apt-get install software-properties-common -y && \
         rake \
         ghc && \
     rm -rf /var/lib/apt/lists/* && \
-    apt clean && \
-    pip3 install PyYAML
+    apt clean
 COPY --from=file_container /fj /fj
 RUN cd /fj/lrun && make install && make clean && useradd runner && adduser runner lrun
 COPY --from=builder /go/src/github.com/erjiaqing/PCIJudger2/cmd/pci15/judger/judger /fj/judger

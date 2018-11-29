@@ -12,5 +12,5 @@ compile:
   timelimit: 10.0
 execute:
   cmd:
-    - "{executable}"
+    - "./{executable}"
   timeratio: 1.2

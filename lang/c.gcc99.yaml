@@ -12,10 +12,11 @@ compile:
     - "{executable}"
     - "-O2"
     - "-lm"
+    - "-static"
     - "-std=c99"
     - "-DONLINE_JUDGE"
   timelimit: 10.0
 execute:
   cmd:
-    - "{executable}"
+    - "./{executable}"
   timeratio: 1.000

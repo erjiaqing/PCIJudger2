@@ -14,7 +14,9 @@ compile:
   timelimit: 10.0
 execute:
   cmd:
-    - "java"
+    - "/usr/bin/java"
     - "-jar"
+    - "-Xmx512M"
+    - "-Xss256M"
     - "{executable}"
   timeratio: 2.5

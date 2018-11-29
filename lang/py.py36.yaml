@@ -13,4 +13,4 @@ execute:
   cmd:
     - "/usr/bin/python3"
     - "{executable}"
-  timeratio: 2.0
+  timeratio: 5.0

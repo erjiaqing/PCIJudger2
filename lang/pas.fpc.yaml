@@ -1,0 +1,18 @@
+meta:
+  name: "Pascal with FPC"
+validsuff: "(pas)"
+default: main.pas
+source: "main.pas"
+executable: "main.exe"
+compile:
+  args:
+    - "/usr/bin/fpc"
+    - "{source}"
+    - "-o{executable}"
+    - "-O2"
+    - "-dONLINE_JUDGE"
+  timelimit: 10.0
+execute:
+  cmd:
+    - "./{executable}"
+  timeratio: 1.000
