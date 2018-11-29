@@ -16,7 +16,7 @@ FROM ubuntu:16.04
 VOLUME ["/problem", "/code"]
 
 RUN apt-get update && apt-get install software-properties-common -y && \
-    add-apt-repository longsleep/golang-backports && \
+    add-apt-repository ppa:longsleep/golang-backports && \
     apt-get update && \
     apt-get install -y \
         build-essential \
