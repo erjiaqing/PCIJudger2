@@ -293,6 +293,14 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	judgeResult.prepareProblemConf(problemConf)
 
+	if problemConf.TimeLimit == 0 {
+		problemConf.TimeLimit = problemConf.TimeLimitBK
+	}
+
+	if problemConf.TimeLimit == 0 {
+		problemConf.TimeLimit = 1000
+	}
+
 	if problemConf.Checker == nil {
 		problemConf.Checker = &SourceCode{}
 	}
