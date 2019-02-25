@@ -3,7 +3,7 @@ meta:
 validsuff: "(cpp|cc)"
 default: main.cpp
 source: "main.cpp"
-executable: "main.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/bin/g++"

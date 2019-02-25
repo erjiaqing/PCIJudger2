@@ -3,7 +3,7 @@ meta:
 validsuff: "c"
 default: main.c
 source: "main.c"
-executable: "main.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/bin/gcc"

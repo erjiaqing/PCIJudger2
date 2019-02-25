@@ -2,7 +2,7 @@ meta:
   name: Kotlin
 default: "main.kt"
 source: "main.kt"
-executable: "main.jar"
+executable: "{source<}.jar"
 compile:
   args:
     

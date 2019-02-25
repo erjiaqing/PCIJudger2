@@ -2,7 +2,7 @@ meta:
   name: Haskell / GHC 7.
 default: "main.hs"
 source: "main.hs"
-executable: "main.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/bin/ghc"

@@ -31,6 +31,7 @@ type TestCase struct {
 	Score        int      `json:"score"`
 	Input        string   `json:"input"`
 	Output       string   `json:"output"`
+	Example      bool     `json:"example"`
 	TimeLimit    uint64   `json:"time,omitempty"`
 	MemoryLimit  uint64   `json:"memoryLimit,omitempty"`
 }

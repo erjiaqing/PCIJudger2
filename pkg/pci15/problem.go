@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	shutil "github.com/termie/go-shutil"
@@ -18,14 +19,19 @@ type BuildResult struct {
 }
 
 func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
+	if dest == "" {
+		dest = problem
+	}
 	logrus.Infof("Build problem %s -> %s", problem, dest)
 	result := &BuildResult{
 		Success: false,
 		Output:  "",
 		Log:     NewPCILog("problem-builder"),
 	}
-	if err := shutil.CopyTree(problem, dest, nil); err != nil {
-		return nil, err
+	if dest != problem {
+		if err := shutil.CopyTree(problem, dest, nil); err != nil {
+			return nil, err
+		}
 	}
 	if currentDir, err := os.Getwd(); err != nil {
 		result.Log.Append(fmt.Sprintf("Failed to get working directory %v", err))
@@ -43,6 +49,21 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 	if err := loadYAML("problem.yaml", problemMeta); err != nil {
 		result.Log.Append(fmt.Sprintf("Failed to load problem.yaml: %v", err))
 		return result, err
+	}
+	if problemMeta.Checker != nil && strings.HasPrefix(problemMeta.Checker.Source, "std::") {
+		result.Log.Append(fmt.Sprintf("Use std checker..."))
+		if err := shutil.CopyFile(filepath.Join(conf.SupportFiles, "checkers", problemMeta.Checker.Source[5:]), filepath.Join(dest, problemMeta.Checker.Source), false); err != nil {
+			result.Success = false
+			result.Log.Append("Failed to copy std checker")
+			result.Log.Append(err.Error())
+			return result, err
+		}
+		if err := shutil.CopyFile(filepath.Join(conf.SupportFiles, "testlib.h"), filepath.Join(dest, "testlib.h"), false); err != nil {
+			result.Success = false
+			result.Log.Append("Failed to copy testlib.h")
+			result.Log.Append(err.Error())
+			return result, err
+		}
 	}
 
 	if problemMeta.Checker != nil {
@@ -70,6 +91,7 @@ func BuildProblem(problem, dest string, conf *Config) (*BuildResult, error) {
 		}
 	}
 
+	result.Success = true
 	return result, nil
 }
 

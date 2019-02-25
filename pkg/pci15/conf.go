@@ -10,5 +10,6 @@ type Config struct {
 	ProblemPath     string        `json:"datapath"`
 	MirrorFSConfig  string        `json:"mirrorfs"`
 	MaxJudgeThread  int           `json:"thread"`
+	SupportFiles    string        `json:"supportFiles"`
 	HostSocket      *hostconn.UDP `json:"-"`
 }

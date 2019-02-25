@@ -451,14 +451,24 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	checkerCmd := []string{filepath.Join(problem, problemConf.Checker.Executable)}
 	if problemConf.Checker.Executable == "" {
-		checkerCmd = []string{filepath.Join(problem, problemConf.Checker.Source+".exe")}
+		checkerExec, _, err := GetExecuteCommand(problemConf.Checker, conf)
+		if err != nil {
+			checkerCmd = []string{filepath.Join(problem, problemConf.Checker.Source+".exe")}
+		} else {
+			checkerCmd = checkerExec.Execute
+		}
 	}
 
 	interCmd := []string{}
 	if problemConf.Interactor != nil {
 		interCmd = []string{filepath.Join(problem, problemConf.Interactor.Executable)}
 		if problemConf.Interactor.Executable == "" {
-			interCmd = []string{filepath.Join(problem, problemConf.Interactor.Source+".exe")}
+			interExec, _, err := GetExecuteCommand(problemConf.Interactor, conf)
+			if err != nil {
+				interCmd = []string{filepath.Join(problem, problemConf.Interactor.Source+".exe")}
+			} else {
+				interCmd = interExec.Execute
+			}
 		}
 	}
 

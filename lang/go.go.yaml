@@ -3,7 +3,7 @@ meta:
 validsuff: "go"
 default: main.go
 source: "main.go"
-executable: "main.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/lib/go-1.11/bin/go"

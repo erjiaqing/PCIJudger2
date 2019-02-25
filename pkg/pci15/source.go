@@ -32,7 +32,12 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 	if err := loadYAML(filepath.Join(conf.LanguageStorage, code.Language+".yaml"), language); err != nil {
 		return nil, nil, err
 	}
-	Variables["filename"] = code.Source
+	Variables["source"] = code.Source
+	sourceWOsuffix := strings.LastIndex(code.Source, ".")
+	if sourceWOsuffix == -1 {
+		sourceWOsuffix = len(code.Source)
+	}
+	Variables["source<"] = code.Source[:sourceWOsuffix]
 	if language.Variable != nil {
 		for _, variable := range language.Variable {
 			name := variable.Name
@@ -63,7 +68,7 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 	for k, v := range Variables {
 		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, 1000000)
 	}
-	Variables["source"] = ret.Source
+	// Variables["source"] = ret.Source
 	Variables["executable"] = ret.Executable
 	for _, str := range language.Compile.Cmd {
 		for k, v := range Variables {

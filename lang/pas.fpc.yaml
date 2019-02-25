@@ -3,7 +3,7 @@ meta:
 validsuff: "(pas)"
 default: main.pas
 source: "main.pas"
-executable: "main.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/bin/fpc"

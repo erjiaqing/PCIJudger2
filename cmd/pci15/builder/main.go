@@ -15,6 +15,7 @@ var conf = &pci15.Config{
 	Problem:         "/input",
 	LanguageStorage: "/language",
 	ProblemPath:     "/output",
+	SupportFiles:    "/assets",
 	MirrorFSConfig:  ".mirrorfs.conf",
 }
 
@@ -22,14 +23,13 @@ func init() {
 	flag.StringVar(&conf.Tmp, "tempdir", conf.Tmp, "tempory directory")
 	flag.StringVar(&conf.Problem, "input", conf.Problem, "problem path")
 	flag.StringVar(&conf.LanguageStorage, "langconf", conf.LanguageStorage, "path to store languages")
-	flag.StringVar(&conf.ProblemPath, "output", conf.ProblemPath, "path to output problem")
+	flag.StringVar(&conf.SupportFiles, "assets", conf.SupportFiles, "path to place supporting files")
 }
 
 func main() {
 	flag.Parse()
 	src := conf.Problem
-	dst := conf.ProblemPath
-	res, err := pci15.BuildProblem(src, dst, conf)
+	res, err := pci15.BuildProblem(src, "", conf)
 	if err != nil {
 		logrus.Fatalf("Failed to build problem: %v", err)
 	}

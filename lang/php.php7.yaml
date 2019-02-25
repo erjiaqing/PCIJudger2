@@ -2,7 +2,7 @@ meta:
   name: PHP7
 default: "main.php"
 source: "main.php"
-executable: "main.php"
+executable: "{source<}.php"
 compile:
   args:
     - "/usr/bin/php"

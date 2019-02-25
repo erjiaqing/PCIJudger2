@@ -2,7 +2,7 @@ meta:
   name: C# with Mono
 default: "Program.cs"
 source: "Program.cs"
-executable: "Program.exe"
+executable: "{source<}.exe"
 compile:
   args:
     - "/usr/bin/mcs"

@@ -18,6 +18,7 @@ var conf = &pci15.Config{
 	Problem:         "/input",
 	LanguageStorage: "/language",
 	ProblemPath:     "/output",
+	SupportFiles:    "/assets",
 	MirrorFSConfig:  "/.mirrorfs.conf",
 	MaxJudgeThread:  1,
 }
@@ -43,6 +44,7 @@ func init() {
 	flag.StringVar(&code.Language, "language", code.Language, "code language")
 	flag.StringVar(&hostUDPConnIP, "udp.ip", "", "host ip")
 	flag.StringVar(&judgeUid, "udp.uid", "", "judge id")
+	flag.StringVar(&conf.SupportFiles, "assets", conf.SupportFiles, "path to place supporting files")
 	flag.IntVar(&hostUDPConnPort, "udp.port", 0, "host port")
 	flag.IntVar(&conf.MaxJudgeThread, "thread", conf.MaxJudgeThread, "code language")
 }
