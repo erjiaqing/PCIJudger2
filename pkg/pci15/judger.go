@@ -331,13 +331,13 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	codeBin, _ = ioutil.ReadFile(code.Source)
 
-	execCommand, codeLanguage, err := GetExecuteCommand(code, conf)
+	execCommand, codeLanguage, err := GetExecuteCommand2(code, conf, workDir, true)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := func() error {
-		fp, err := os.OpenFile(filepath.Join(workDir, execCommand.Source), os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+		fp, err := os.OpenFile(execCommand.Source, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -355,7 +355,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	}(); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
 	} else {
-		code.Source = filepath.Join(workDir, execCommand.Source)
+		code.Source = execCommand.Source
 	}
 
 	if err := func() error {
@@ -371,8 +371,6 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		return nil
 	}(); err != nil {
 		return nil, fmt.Errorf("failed to copy source: %v", err)
-	} else {
-		code.Source = filepath.Join(workDir, execCommand.Source)
 	}
 
 	logrus.Infof("Code source name: %s", code.Source)
@@ -400,7 +398,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	conf.HostSocket.SendStatus("01", 0)
 
-	compilerOutput, err := newCode.Compile(conf, workDir)
+	compilerOutput, err := newCode.Compile2(conf, workDir, true)
 	if err != nil && newCode.CompileResult != nil {
 		judgeResult.Verdict = "CE"
 		judgeResult.Detail = append(judgeResult.Detail, &JudgeDetail{
@@ -451,8 +449,10 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 
 	checkerCmd := []string{filepath.Join(problem, problemConf.Checker.Executable)}
 	if problemConf.Checker.Executable == "" {
+		problemConf.Checker.Source = filepath.Join(problem, problemConf.Checker.Source)
 		checkerExec, _, err := GetExecuteCommand(problemConf.Checker, conf)
 		if err != nil {
+			logrus.Warnf("Failed to get checker Exec: %v", err)
 			checkerCmd = []string{filepath.Join(problem, problemConf.Checker.Source+".exe")}
 		} else {
 			checkerCmd = checkerExec.Execute
@@ -463,8 +463,10 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	if problemConf.Interactor != nil {
 		interCmd = []string{filepath.Join(problem, problemConf.Interactor.Executable)}
 		if problemConf.Interactor.Executable == "" {
+			problemConf.Interactor.Source = filepath.Join(problem, problemConf.Interactor.Source)
 			interExec, _, err := GetExecuteCommand(problemConf.Interactor, conf)
 			if err != nil {
+				logrus.Warnf("Failed to get interactor Exec: %v", err)
 				interCmd = []string{filepath.Join(problem, problemConf.Interactor.Source+".exe")}
 			} else {
 				interCmd = interExec.Execute
@@ -516,5 +518,17 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 	wg.Wait()
 
 	judgeResult.Collect(problemConf, countTestCase)
+
+	if newCode.CompileResult != nil {
+		judgeResult.Detail = append(judgeResult.Detail, &JudgeDetail{
+			Name:       "compile",
+			Verdict:    "AC",
+			Output:     compilerOutput,
+			ExeTime:    newCode.CompileResult.RealTime,
+			ExeMemory:  newCode.CompileResult.ExeMemory,
+			ExitCode:   newCode.CompileResult.ExitCode,
+			ExitSignal: newCode.CompileResult.ExitSignal,
+		})
+	}
 	return judgeResult, nil
 }

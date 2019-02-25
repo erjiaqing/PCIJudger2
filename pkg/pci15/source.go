@@ -20,6 +20,10 @@ type ExecuteCommand struct {
 }
 
 func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Language, error) {
+	return GetExecuteCommand2(code, conf, "", false)
+}
+
+func GetExecuteCommand2(code *SourceCode, conf *Config, path string, ignoreFileName bool) (*ExecuteCommand, *Language, error) {
 	if code == nil {
 		return nil, nil, errors.New("code is nil")
 	}
@@ -28,16 +32,22 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if path == "" {
+		cwd, _ := os.Getwd()
+		path = cwd
+	}
+
+	if !ignoreFileName && !filepath.IsAbs(code.Source) {
+		if err == nil {
+			code.Source = filepath.Join(path, code.Source)
+		}
+	}
+
 	language := &Language{}
 	if err := loadYAML(filepath.Join(conf.LanguageStorage, code.Language+".yaml"), language); err != nil {
 		return nil, nil, err
 	}
-	Variables["source"] = code.Source
-	sourceWOsuffix := strings.LastIndex(code.Source, ".")
-	if sourceWOsuffix == -1 {
-		sourceWOsuffix = len(code.Source)
-	}
-	Variables["source<"] = code.Source[:sourceWOsuffix]
 	if language.Variable != nil {
 		for _, variable := range language.Variable {
 			name := variable.Name
@@ -60,10 +70,23 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 		}
 	}
 	ret := &ExecuteCommand{}
-	ret.Source = language.Source
-	for k, v := range Variables {
-		ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, 1000000)
+
+	if ignoreFileName {
+		ret.Source = filepath.Join(path, language.Source)
+		for k, v := range Variables {
+			ret.Source = strings.Replace(ret.Source, "{"+k+"}", v, 1000000)
+		}
+	} else {
+		ret.Source = code.Source
 	}
+
+	Variables["source"] = ret.Source
+	sourceWOsuffix := strings.LastIndex(ret.Source, ".")
+	if sourceWOsuffix == -1 {
+		sourceWOsuffix = len(ret.Source)
+	}
+	Variables["source<"] = ret.Source[:sourceWOsuffix]
+
 	ret.Executable = language.Executable
 	for k, v := range Variables {
 		ret.Executable = strings.Replace(ret.Executable, "{"+k+"}", v, 1000000)
@@ -86,6 +109,10 @@ func GetExecuteCommand(code *SourceCode, conf *Config) (*ExecuteCommand, *Langua
 }
 
 func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
+	return code.Compile2(conf, workdir, false)
+}
+
+func (code *SourceCode) Compile2(conf *Config, workdir string, ignoreFileName bool) (string, error) {
 	logrus.Infof("Language: %s", code.Language)
 
 	if currentDir, err := os.Getwd(); err != nil {
@@ -96,7 +123,7 @@ func (code *SourceCode) Compile(conf *Config, workdir string) (string, error) {
 		defer os.Chdir(currentDir)
 	}
 
-	compileCfg, lang, err := GetExecuteCommand(code, conf)
+	compileCfg, lang, err := GetExecuteCommand2(code, conf, workdir, ignoreFileName)
 	if err != nil {
 		return "", err
 	}
