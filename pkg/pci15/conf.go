@@ -11,5 +11,6 @@ type Config struct {
 	MirrorFSConfig  string        `json:"mirrorfs"`
 	MaxJudgeThread  int           `json:"thread"`
 	SupportFiles    string        `json:"supportFiles"`
+	RunAll bool `json:"testrun"`
 	HostSocket      *hostconn.UDP `json:"-"`
 }

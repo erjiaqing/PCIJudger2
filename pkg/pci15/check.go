@@ -2,44 +2,77 @@ package pci15
 
 import (
 	"os"
-	"path/filepath"
-
-	shutil "github.com/termie/go-shutil"
 )
 
-type CheckerResult struct {
-	Success bool `json:"success"`
+type CheckResult struct {
+	Success      bool         `json:"success"`
+	Build        *BuildResult `json:"build"`
+	RunSolutions []*CheckRun  `json:"sols"`
 }
 
-type checker struct {
-	Root string
+type CheckRun struct {
+	*JudgeResult
+	Expected []string `json:"expected"`
 }
 
-var Checker checker
+func CheckProblemRepo(conf *Config, source string) (res *CheckResult, err error) {
+	res = &CheckResult{}
+	res.Success = true
 
-func (c *checker) ProcessWork(conf *Config) error {
-	if oldCwd, err := os.Getwd(); err != nil {
-		return err
-	} else {
-		defer os.Chdir(oldCwd)
+	var oldCwd string
+	if oldCwd, err = os.Getwd(); err != nil {
+		return res, err
 	}
 
-	//log := NewPCILog("checker")
+	defer os.Chdir(oldCwd)
 
-	tmpDirName := GetRandomString()
-	BaseDir := filepath.Join(conf.Tmp, tmpDirName)
-	ProblemSourceDir := conf.Problem
-	if err := shutil.CopyTree(ProblemSourceDir, BaseDir, nil); err != nil {
-		return err
-	}
-	if err := os.Chdir(BaseDir); err != nil {
-		return err
+	if res.Build, err = BuildProblem(source, "", conf); err != nil {
+		return res, err
 	}
 
-	compileProblemLogger := NewPCILog("problem-compiler")
-	compileProblemLogger.Append("Building problem")
-	problemCompileDir := filepath.Join(conf.Tmp, GetRandomString())
-	BuildProblem(BaseDir, problemCompileDir, conf)
+	if err = os.Chdir(source); err != nil {
+		return nil, err
+	}
 
-	return nil
+	problemMeta := &ProblemConfig{}
+	if err := loadYAML("problem.yaml", problemMeta); err != nil {
+		// problem.yaml should be valid and well-formatted yaml file
+		return nil, err
+	}
+
+	for _, r := range problemMeta.TestSolutions {
+		judgerConf := &Config{
+			Tmp:             conf.Tmp,
+			IsDocker:        conf.IsDocker,
+			Problem:         source,
+			LanguageStorage: conf.LanguageStorage,
+			ProblemPath:     source,
+			SupportFiles:    conf.SupportFiles,
+			MirrorFSConfig:  conf.MirrorFSConfig,
+			MaxJudgeThread:  conf.MaxJudgeThread,
+			RunAll:          true,
+		}
+		runRes, err := Judge(judgerConf, &r.SourceCode, judgerConf.Problem)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r2 := range runRes.Detail {
+			findValid := false
+			for _, v := range r.ExpectedVerdict {
+				// No IG should found
+				if v == r2.Verdict {
+					findValid = true
+					break
+				}
+			}
+			if !findValid {
+				res.Success = false
+				runRes.Success = false
+			}
+		}
+		res.RunSolutions = append(res.RunSolutions, &CheckRun{runRes, append([]string{}, r.ExpectedVerdict...)})
+	}
+
+	return res, nil
 }

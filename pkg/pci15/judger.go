@@ -28,6 +28,7 @@ type JudgeResult struct {
 	lastTest    int
 	judgeResult map[int]*JudgeDetail
 	judgeState  *sync.Map
+	testRun bool // In test run, we will always run all test cases
 }
 
 type JudgeDetail struct {
@@ -100,6 +101,9 @@ func (j *JudgeResult) Collect(problemConf *ProblemConfig, testCase int) {
 }
 
 func (j *JudgeResult) checkPass(t string) bool {
+	if j.testRun {
+		return true
+	}
 	status, ok := j.judgeState.Load(t)
 	if !ok {
 		return false

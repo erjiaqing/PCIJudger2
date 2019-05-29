@@ -17,6 +17,8 @@ type ProblemConfig struct {
 	Interactor  *SourceCode `json:"interactor,omitempty"`
 	ExtraFile   []string    `json:"additionalLibrary,omitempty"`
 	Case        []TestCase  `json:"case"`
+
+	TestSolutions []*TestSolution `json:"test_solution,omitempty"`
 }
 
 type SourceCode struct {
@@ -24,6 +26,11 @@ type SourceCode struct {
 	Language      string         `json:"lang"`
 	Executable    string         `json:"-"`
 	CompileResult *ExecuteResult `json:"-"`
+}
+
+type TestSolution struct {
+	SourceCode
+	ExpectedVerdict []string `json:"expected_verdict"`
 }
 
 type TestCase struct {

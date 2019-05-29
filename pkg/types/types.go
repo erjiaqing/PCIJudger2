@@ -48,6 +48,9 @@ type Problem struct {
 	Interector  Program    `json:"interactor,omitempty"`
 	Checker     Program    `json:"checker,omitempty"`
 	Subtasks    []Subtask  `json:"subtasks"`
+
+	TestSolutions []Solutions `json:"solutions"`
+	AnswerGenerator Program `json:"main_ac"`
 }
 
 type Program struct {
@@ -55,4 +58,15 @@ type Program struct {
 	Source     string `json:"src"`
 	Binary     string `json:"binary,omitempty"`
 	SourceHash string `json:"sourceHash,omitempty"`
+}
+
+type Solutions struct {
+	Program
+	ExpectedVerdict []string `json:"expected_verdict"`
+}
+
+type InputGenerator struct {
+	Program
+	InputParams []string `json:"params"`
+	Counts int `json:"count"`
 }
