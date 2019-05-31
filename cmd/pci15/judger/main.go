@@ -22,6 +22,7 @@ var conf = &pci15.Config{
 	MirrorFSConfig:  "/.mirrorfs.conf",
 	MaxJudgeThread:  1,
 }
+
 var code = &pci15.SourceCode{
 	Language: "",
 	Source:   "/code",

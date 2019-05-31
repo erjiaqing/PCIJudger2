@@ -22,9 +22,11 @@ var conf = &pci15.Config{
 func init() {
 	flag.StringVar(&conf.Tmp, "tempdir", conf.Tmp, "tempory directory")
 	flag.StringVar(&conf.Problem, "input", conf.Problem, "problem path")
+	flag.StringVar(&conf.Problem, "problem", conf.Problem, "problem path")
 	flag.StringVar(&conf.LanguageStorage, "langconf", conf.LanguageStorage, "path to store languages")
 	flag.StringVar(&conf.SupportFiles, "assets", conf.SupportFiles, "path to place supporting files")
 	flag.IntVar(&conf.MaxJudgeThread, "thread", conf.MaxJudgeThread, "code language")
+	flag.StringVar(&conf.MirrorFSConfig, "mirrorfsconf", conf.MirrorFSConfig, "path to mirrorfs config")
 }
 
 func main() {

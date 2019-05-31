@@ -19,7 +19,7 @@ VOLUME ["/problem", "/code"]
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install software-properties-common -y
-RUN echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse\n' > /etc/apt/sources.list
+# RUN echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-security main restricted universe multiverse\n' > /etc/apt/sources.list
 RUN apt-get update && \
     apt-get install -y \
         build-essential \
@@ -40,4 +40,4 @@ COPY --from=builder /go/src/github.com/erjiaqing/PCIJudger2/cmd/pci15/checker/ch
 
 WORKDIR /fj/
 USER runner
-ENTRYPOINT ["/fj/judger", "-problem", "/problem", "-langconf", "/fj/lang", "-mirrorfsconf", "/fj/mirrorfs.conf", "-assets", "/fj/assets", "-thread", "4"]
+ENTRYPOINT ["/fj/checker", "-problem", "/problem", "-langconf", "/fj/lang", "-mirrorfsconf", "/fj/mirrorfs.conf", "-assets", "/fj/assets", "-thread", "4"]

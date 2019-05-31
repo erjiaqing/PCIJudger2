@@ -42,7 +42,7 @@ func NewUDP(ip string, port int, uid string) *UDP {
 }
 
 func (c *UDP) SendStatus(state string, progress int) {
-	if c.socket == nil {
+	if c == nil || c.socket == nil {
 		return
 	}
 	msg := &message.StateMessage{}

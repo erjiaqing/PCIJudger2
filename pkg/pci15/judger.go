@@ -28,7 +28,7 @@ type JudgeResult struct {
 	lastTest    int
 	judgeResult map[int]*JudgeDetail
 	judgeState  *sync.Map
-	testRun bool // In test run, we will always run all test cases
+	testRun     bool // In test run, we will always run all test cases
 }
 
 type JudgeDetail struct {
@@ -74,7 +74,7 @@ func (j *JudgeResult) Collect(problemConf *ProblemConfig, testCase int) {
 				}
 			}
 
-			if shouldJudge {
+			if shouldJudge || j.testRun {
 				j.Detail = append(j.Detail, val)
 			} else {
 				j.Detail = append(j.Detail, &JudgeDetail{
@@ -187,7 +187,7 @@ func (j *JudgeResult) doJudge(testId int, testInfo TestCase, problemConf *Proble
 	}
 
 	for _, dep := range testInfo.Dependencies {
-		if !j.checkPass(dep) {
+		if !j.testRun && !j.checkPass(dep) {
 			resDetail.Verdict = "IG"
 			resDetail.Score = 0
 			return resDetail, false
@@ -281,6 +281,7 @@ func Judge(conf *Config, code *SourceCode, problem string) (*JudgeResult, error)
 		Success:     true,
 		judgeResult: make(map[int]*JudgeDetail),
 		judgeState:  &sync.Map{},
+		testRun:     conf.RunAll,
 	}
 
 	problemConf := &ProblemConfig{}
